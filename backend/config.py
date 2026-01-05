@@ -12,7 +12,7 @@ class Config:
     MAX_CONTENT_LENGTH = 500 * 1024 * 1024
 
     # 正式環境
-    BASIC_AUTH = 'MjAyNTAxMDExNjU0NTVnTk40VkpYR1BsSmI6U2V5RExMNFpCdkkxMkN0UnhXR2p2R3I4YXZXSXJjTW0zOW96T1c1emhFVThObGUwdEU5NUV0RXFO'
+    BASIC_AUTH = 'MjAyNjAxMDYwMzE0NTR2eDlLRUlTMnFwY3I6T2ZDMnE2bzhUdm1YODN3Z3NqNHNqWko5TXp2N3BMZWhRVTlJbzdlb0llYzFPNFpUVw=='
     REDIRECT_URL = 'https://health.ncu.edu.tw/api/auth/login'
     HOME_PAGE_URL = 'https://health.ncu.edu.tw/'
 
