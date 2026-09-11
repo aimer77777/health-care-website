@@ -3,19 +3,19 @@
 import InsuranceUsecase from "@/module/insurance/application/insuranceUsecase";
 import InsuranceRepoImpl from "@/module/insurance/presenter/insuranceRepoImpl";
 import InsuranceViewModel from "@/module/insurance/presenter/insuranceViewModel";
-import { usePathname, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import InsuranceEditor from "../../insurance-editor";
-import { useEffect, useState } from "react";
+import { useEffect, useState, use } from "react";
 
 type Props = {
-  params: { locale: string; id: string };
+  params: Promise<{ locale: string; id: string }>;
 };
 
 const usecase = new InsuranceUsecase(new InsuranceRepoImpl());
 
-export default function EditInsurancePage({ params }: Props) {
+export default function EditInsurancePage(props: Props) {
+  const params = use(props.params);
   const router = useRouter();
-  const pathname = usePathname();
 
   const [insurance, setInsurance] = useState<InsuranceViewModel | undefined>(undefined);
 
@@ -28,7 +28,7 @@ export default function EditInsurancePage({ params }: Props) {
   useEffect(() => {
     fetchAll().catch((err) => {
       console.error(err);
-      router.replace(`/${params.locale}/404?notfound=${pathname}`);
+      router.replace(`/${params.locale}/404`);
     });
   }, []);
 

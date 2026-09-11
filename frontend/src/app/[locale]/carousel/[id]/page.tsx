@@ -8,12 +8,13 @@ import QuillViewer from "@/components/quill-viewer";
 import { Link } from "@/navigation";
 
 type Props = {
-  params: { locale: string; id: string };
+  params: Promise<{ locale: string; id: string }>;
 }
 
-export default async function CarouselPage({ params }: Props) {
-  const idNum = Number.parseInt(params.id);
-  if (idNum === Number.NaN) notFound();
+export default async function CarouselPage(props: Props) {
+  const params = await props.params;
+  if (!/^\d+$/.test(params.id)) notFound();
+  const idNum = Number(params.id);
 
   const usecase = new CarouselUsecase(new CarouselRepoImpl());
   var viewModel: CarouselViewModel;

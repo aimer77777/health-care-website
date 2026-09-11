@@ -1,21 +1,21 @@
 "use client";
 
-import { usePathname, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import CarouselEditor from "../../carousel-editor";
 import CarouselUsecase from "@/module/carousel/application/carouselUsecase";
 import CarouselRepoImpl from "@/module/carousel/presenter/carouselRepoImpl";
 import CarouselViewModel from "@/module/carousel/presenter/carouselViewModel";
-import { useEffect, useState } from "react";
+import { useEffect, useState, use } from "react";
 
 type Props = {
-  params: { locale: string; id: string };
+  params: Promise<{ locale: string; id: string }>;
 };
 
 const usecase = new CarouselUsecase(new CarouselRepoImpl());
 
-export default function CarouselEditPage({ params }: Props) {
+export default function CarouselEditPage(props: Props) {
+  const params = use(props.params);
   const router = useRouter();
-  const pathname = usePathname();
 
   const [carousel, setCarousel] = useState<CarouselViewModel | undefined>(undefined);
 
@@ -28,7 +28,7 @@ export default function CarouselEditPage({ params }: Props) {
   useEffect(() => {
     fetchAll().catch((err) => {
       console.error(err);
-      router.replace(`/${params.locale}/404?notfound=${pathname}`); 
+      router.replace(`/${params.locale}/404`);
     });
   }, []);
 

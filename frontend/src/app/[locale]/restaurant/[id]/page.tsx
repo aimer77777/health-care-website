@@ -11,18 +11,19 @@ import { getTranslations } from "next-intl/server";
 import { notFound } from "next/navigation";
 
 type Props = {
-  params: { locale: string, id: string };
+  params: Promise<{ locale: string, id: string }>;
 };
 
-export default async function RestaurantPage({params}: Props) {
+export default async function RestaurantPage(props: Props) {
+  const params = await props.params;
   const trans = await getTranslations("Restaurant");
   const statusTrans = await getTranslations("Status");
 
   const restaurantUsecase = new RestaurantUsecase(new RestaurantRepoImpl());
   const attachmentUsecase = new AttachmentUsecase(new AttachmentRepoImpl());
 
-  const idNum = Number.parseInt(params.id);
-  if (idNum === Number.NaN) notFound();
+  if (!/^\d+$/.test(params.id)) notFound();
+  const idNum = Number(params.id);
 
   var entity: RestaurantEntity;
   try {

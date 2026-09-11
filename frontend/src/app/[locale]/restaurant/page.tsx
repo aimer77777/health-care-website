@@ -1,11 +1,13 @@
+import { use } from "react";
 import { useTranslations } from "next-intl";
 import RestaurantPanel from "./restaurant-panel";
 
 type Props = {
-  params: { locale: string };
+  params: Promise<{ locale: string }>;
 };
 
-export default function RestaurantPage({ params }: Props) {
+export default function RestaurantPage(props: Props) {
+  const params = use(props.params);
   const trans = useTranslations("Restaurant");
 
   return (

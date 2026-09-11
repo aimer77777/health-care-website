@@ -1,10 +1,11 @@
 import InsuranceEditor from "../insurance-editor";
 
 type Props = {
-  params: { locale: string };
+  params: Promise<{ locale: string }>;
 };
 
-export default function NewInsurancePage({ params }: Props) {
+export default async function NewInsurancePage(props: Props) {
+  const params = await props.params;
   return (
     <InsuranceEditor locale={params.locale} />
   );

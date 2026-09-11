@@ -1,4 +1,5 @@
-"use client";
+"use client";;
+import { use } from "react";
 
 import { useTranslations } from "next-intl";
 import InsurancePanel from "./insurance-panel";
@@ -10,10 +11,11 @@ import { BACKEND_HOST } from "@/module/config/config";
 import ReportField from "@/components/report-field";
 
 type Props = {
-  params: { locale: string };
+  params: Promise<{ locale: string }>;
 };
 
-export default function AdminInsurancePage({ params }: Props) {
+export default function AdminInsurancePage(props: Props) {
+  const params = use(props.params);
   const trans = useTranslations("Insurance");
 
   const actions = (

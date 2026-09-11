@@ -1,10 +1,11 @@
 import RestaurantEditor from "../restaurant-editor";
 
 type Props = {
-  params: { locale: string };
+  params: Promise<{ locale: string }>;
 }
 
-export default function NewRestaurantPage({ params }: Props) {
+export default async function NewRestaurantPage(props: Props) {
+  const params = await props.params;
   return (
     <RestaurantEditor locale={params.locale} />
   );

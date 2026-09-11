@@ -19,13 +19,14 @@ import NotEmptyValidationUsecase from "@/module/validation/application/notEmptyV
 import { useRouter } from "@/navigation";
 import { faPaperPlane } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { useEffect, useState } from "react";
+import { useEffect, useState, use } from "react";
 
 type Props = {
-  params: { locale: string };
+  params: Promise<{ locale: string }>;
 };
 
-export default function NewDenguePage({ params }: Props) {
+export default function NewDenguePage(props: Props) {
+  const params = use(props.params);
   const buildingUsecase = new BuildingUsecase(new BuildingRepoImpl());
   const userUsecase = new UserUsecase(new UserRepoImpl());
 
