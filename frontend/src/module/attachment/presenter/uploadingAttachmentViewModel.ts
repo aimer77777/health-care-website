@@ -10,7 +10,8 @@ export default class UploadingAttachmentViewModel extends UploadingAttachmentEnt
     }
 
     get pregress(): number {
-        return this.progressMap[this.state] * 100 ?? Number.NaN;
+        const progress = this.progressMap[this.state] as number | undefined;
+        return progress === undefined ? Number.NaN : progress * 100;
     }
 
     get filename(): string {

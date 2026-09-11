@@ -6,11 +6,11 @@ import StaticPostUsecase from "@/module/post/application/staticPostUsecase";
 import PostRepoImpl from "@/module/post/presenter/postRepoImpl";
 import PostViewModel from "@/module/post/presenter/postViewModel";
 import PageEditor from "./page-editor";
-import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useEffect, useState, use } from "react";
 
 type Props = {
-  params: { locale: string, label: string };
+  params: Promise<{ locale: string, label: string }>;
 };
 
 const indexMenuUsecase = new IndexMenuUsecase();
@@ -21,14 +21,14 @@ const topicGroups = indexMenuUsecase.getTopicGroupsExcept([
 
 const postUsecase = new StaticPostUsecase(new PostRepoImpl());
 
-export default function EditStaticPostPage({ params }: Props) {
+export default function EditStaticPostPage(props: Props) {
+  const params = use(props.params);
   const router = useRouter();
-  const pathname = usePathname();
 
   const [post, setPost] = useState<PostViewModel | undefined>(undefined);
 
   function notFound() {
-    router.replace(`/${params.locale}/404?notfound=${pathname}`);
+    router.replace(`/${params.locale}/404`);
   }
 
   async function fetchAll() {

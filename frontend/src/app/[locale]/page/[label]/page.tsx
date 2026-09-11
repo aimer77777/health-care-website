@@ -16,13 +16,14 @@ import { getTranslations } from "next-intl/server";
 import { notFound } from "next/navigation";
 
 type Props = {
-  params: {
+  params: Promise<{
     label: string;
     locale: string;
-  };
+  }>;
 };
 
-export default async function StaticPage({ params }: Props) {
+export default async function StaticPage(props: Props) {
+  const params = await props.params;
   const trans = await getTranslations("Topic");
 
   const postUsecase = new StaticPostUsecase(new PostRepoImpl());

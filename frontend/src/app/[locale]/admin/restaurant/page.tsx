@@ -1,4 +1,5 @@
-"use client";
+"use client";;
+import { use } from "react";
 
 import Button from "@/components/button";
 import { Link } from "@/navigation";
@@ -10,10 +11,11 @@ import ReportField from "@/components/report-field";
 import { BACKEND_HOST } from "@/module/config/config";
 
 type Props = {
-  params: { locale: string };
+  params: Promise<{ locale: string }>;
 }
 
-export default function AdminRestaurantPage({ params }: Props) {
+export default function AdminRestaurantPage(props: Props) {
+  const params = use(props.params);
   const trans = useTranslations("Restaurant");
 
   const actions = (

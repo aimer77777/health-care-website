@@ -1,11 +1,13 @@
+import { use } from "react";
 import { useTranslations } from "next-intl";
 import DownloadPanel from "./download-panel";
 
 type Props = {
-  params: { locale: string };
+  params: Promise<{ locale: string }>;
 };
 
-export default function DownloadAreaPage({ params }: Props) {
+export default function DownloadAreaPage(props: Props) {
+  const params = use(props.params);
   const trans = useTranslations("Download");
 
   return (

@@ -1,11 +1,13 @@
+import { use } from "react";
 import { useTranslations } from "next-intl";
 import BuildingPanel from "./building-panel";
 
 type Props = {
-  params: { locale: string };
+  params: Promise<{ locale: string }>;
 };
 
-export default function AdminDenguePage({ params }: Props) {
+export default function AdminDenguePage(props: Props) {
+  const params = use(props.params);
   const trans = useTranslations("AdminDengue");
 
   return (

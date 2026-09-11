@@ -5,19 +5,19 @@
 import DownloadUsecase from "@/module/download/application/downloadUsecase";
 import DownloadRepoImpl from "@/module/download/presenter/downloadRepoImpl";
 import DownloadViewModel from "@/module/download/presenter/downloadViewModel";
-import { useEffect, useState } from "react";
+import { useEffect, useState, use } from "react";
 import DownloadEditor from "../../download-editor";
-import { usePathname, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 
 type Props = {
-  params: { locale: string; id: string };
+  params: Promise<{ locale: string; id: string }>;
 };
 
 const usecase = new DownloadUsecase(new DownloadRepoImpl());
 
-export default function DownloadEditPage({ params }: Props) {
+export default function DownloadEditPage(props: Props) {
+  const params = use(props.params);
   const router = useRouter();
-  const pathname = usePathname();
 
   const [download, setDownload] = useState<DownloadViewModel | undefined>(undefined);
 
@@ -30,7 +30,7 @@ export default function DownloadEditPage({ params }: Props) {
   useEffect(() => {
     fetchAll().catch((err) => {
       console.error(err);
-      router.replace(`/${params.locale}/404?notfound=${pathname}`);
+      router.replace(`/${params.locale}/404`);
     });
   }, []);
 

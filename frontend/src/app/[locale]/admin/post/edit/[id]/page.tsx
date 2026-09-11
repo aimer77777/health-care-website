@@ -3,21 +3,21 @@
 import NormalPostUsecase from "@/module/post/application/normalPostUsecase";
 import PostRepoImpl from "@/module/post/presenter/postRepoImpl";
 import PostViewModel from "@/module/post/presenter/postViewModel";
-import { notFound, usePathname, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import PostEditor from "../../post-editor";
 import PostEntity from "@/module/post/domain/postEntity";
 import PostColumnEnum from "@/module/post/domain/postColumnEnum";
-import { useEffect, useState } from "react";
+import { useEffect, useState, use } from "react";
 
 type Props = {
-  params: { locale: string, id: string };
+  params: Promise<{ locale: string, id: string }>;
 };
 
 const usecase = new NormalPostUsecase(new PostRepoImpl());
 
-export default function EditPostPage({ params }: Props) {
+export default function EditPostPage(props: Props) {
+  const params = use(props.params);
   const router = useRouter();
-  const pathname = usePathname();
 
   const [post, setPost] = useState<PostViewModel | undefined>(undefined);
 
@@ -30,7 +30,7 @@ export default function EditPostPage({ params }: Props) {
   useEffect(() => {
     fetchAll().catch((err) => {
       console.error(err);
-      router.replace(`/${params.locale}/404?notfound=${pathname}`);
+      router.replace(`/${params.locale}/404`);
     });
   }, []);
 

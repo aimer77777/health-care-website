@@ -1,6 +1,8 @@
 # IDE config
 .idea
 .vscode
+.env
+frontend/.env.local
 
 backend/.idea
 backend/.instance/
@@ -8,3 +10,6 @@ backend/.venv/
 backend/.test/static/
 backend/.log/
 backend/.static/
+backend/instance/
+**/__pycache__/
+*.py[cod]

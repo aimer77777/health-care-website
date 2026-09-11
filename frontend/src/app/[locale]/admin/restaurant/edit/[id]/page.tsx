@@ -4,19 +4,19 @@ import RestaurantUsecase from "@/module/restaurant/application/restaurantUsecase
 import RestaurantEntity from "@/module/restaurant/domain/restaurantEntity";
 import RestaurantRepoImpl from "@/module/restaurant/presenter/restaurantRepoImpl";
 import RestaurantViewModel from "@/module/restaurant/presenter/restaurantViewModel";
-import { notFound, usePathname, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import RestaurantEditor from "../../restaurant-editor";
-import { useEffect, useState } from "react";
+import { useEffect, useState, use } from "react";
 
 type Props = {
-  params: { id: string, locale: string };
+  params: Promise<{ id: string, locale: string }>;
 };
 
 const usecase = new RestaurantUsecase(new RestaurantRepoImpl());
 
-export default function EditRestaurantPage({ params }: Props) {
+export default function EditRestaurantPage(props: Props) {
+  const params = use(props.params);
   const router = useRouter();
-  const pathname = usePathname();
 
   const [restaurant, setRestaurant] = useState<RestaurantViewModel | undefined>(undefined);
 
@@ -29,7 +29,7 @@ export default function EditRestaurantPage({ params }: Props) {
   useEffect(() => {
     fetchAll().catch((err) => {
       console.error(err);
-      router.replace(`/${params.locale}/404?notfound=${pathname}`);
+      router.replace(`/${params.locale}/404`);
     });
   }, []);
 

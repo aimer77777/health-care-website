@@ -14,18 +14,19 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { notFound } from "next/navigation";
 
 type Props = {
-  params: {
+  params: Promise<{
     id: string;
     locale: string;
-  };
+  }>;
 }
 
-export default async function PostPage({ params }: Props) {
+export default async function PostPage(props: Props) {
+  const params = await props.params;
   const postUsecase = new NormalPostUsecase(new PostRepoImpl());
   const attachmentUsecase = new AttachmentUsecase(new AttachmentRepoImpl());
 
-  const idNum = Number.parseInt(params.id);
-  if (idNum === Number.NaN) notFound();
+  if (!/^\d+$/.test(params.id)) notFound();
+  const idNum = Number(params.id);
 
   var entity: PostEntity;
   try {

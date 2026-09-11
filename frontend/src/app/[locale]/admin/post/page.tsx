@@ -1,3 +1,4 @@
+import { use } from "react";
 import { useTranslations } from "next-intl";
 import PostPanel from "../../post/post-panel";
 import Button from "@/components/button";
@@ -7,10 +8,11 @@ import { Link } from "@/navigation";
 import { normalPostColumnSelections } from "@/module/post/presenter/columnSelection";
 
 type Props = {
-  params: { locale: string };
+  params: Promise<{ locale: string }>;
 }
 
-export default function AdminPostPage({ params }: Props) {
+export default function AdminPostPage(props: Props) {
+  const params = use(props.params);
   const trans = useTranslations("Post");
 
   const actions = (

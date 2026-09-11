@@ -28,6 +28,16 @@ export default function middleware(request: NextRequest) {
     //     return NextResponse.redirect(request.url.replace(/\/dengue.*/, ""));
     // }
 
+    const pathname = request.nextUrl.pathname;
+    const dynamicContentRoute = pathname.match(
+        /^\/(zh|en)\/(post|carousel|restaurant)\/([^/]+)$/
+    );
+    if (dynamicContentRoute && !/^\d+$/.test(dynamicContentRoute[3])) {
+        return NextResponse.redirect(
+            new URL(`/${dynamicContentRoute[1]}/404`, request.url)
+        );
+    }
+
     const handleI18nRouting = createMiddleware({
         locales: locales,
         defaultLocale: "zh",

@@ -1,4 +1,5 @@
 import logging
+import os
 
 
 class Config:
@@ -11,15 +12,29 @@ class Config:
     PORT = 5004
     MAX_CONTENT_LENGTH = 500 * 1024 * 1024
 
-    # 正式環境
-    BASIC_AUTH = 'MjAyNjAxMDYwMzE0NTR2eDlLRUlTMnFwY3I6T2ZDMnE2bzhUdm1YODN3Z3NqNHNqWko5TXp2N3BMZWhRVTlJbzdlb0llYzFPNFpUVw=='
-    REDIRECT_URL = 'https://health.ncu.edu.tw/api/auth/login'
-    HOME_PAGE_URL = 'https://health.ncu.edu.tw/'
+    SECRET_KEY = os.environ.get('FLASK_SECRET_KEY', '')
+    JWT_SECRET_KEY = os.environ.get('JWT_SECRET_KEY', '')
+    JWT_TOKEN_LOCATION = ['cookies', 'headers']
+    JWT_COOKIE_SECURE = True
+    JWT_COOKIE_SAMESITE = 'Strict'
+    JWT_COOKIE_CSRF_PROTECT = True
 
-    # 測試環境用
-    # BASIC_AUTH = 'MjAyNTAyMDcyMzA4MzVsSFFBZzhqamlxejE6enRyaW1PdlpUZ1YxMUpETmFvaVd5R1ZvMW5COE1FUHo5aDVTeE1CN1dyM2dLOUJybXczTg=='
-    # REDIRECT_URL = 'http://localhost/api/auth/return-to'
-    # HOME_PAGE_URL = 'http://localhost/'
+    # Secrets must be provided by the deployment environment, never Git.
+    BASIC_AUTH = os.environ.get('PORTAL_BASIC_AUTH', '')
+    PORTAL_CLIENT_ID = os.environ.get('PORTAL_CLIENT_ID', '')
+    REDIRECT_URL = os.environ.get(
+        'PORTAL_REDIRECT_URL',
+        'https://health.ncu.edu.tw/api/auth/return-to',
+    )
+    HOME_PAGE_URL = os.environ.get('HOME_PAGE_URL', 'https://health.ncu.edu.tw/')
+    CORS_ORIGINS = [
+        origin.strip()
+        for origin in os.environ.get(
+            'CORS_ORIGINS',
+            'https://health.ncu.edu.tw,http://localhost,http://localhost:3000',
+        ).split(',')
+        if origin.strip()
+    ]
 
 
 

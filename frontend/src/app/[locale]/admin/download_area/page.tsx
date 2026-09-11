@@ -1,3 +1,4 @@
+import { use } from "react";
 import { useTranslations } from "next-intl";
 import DownloadPanel from "../../page/download_area/download-panel";
 import Button from "@/components/button";
@@ -6,10 +7,11 @@ import { faAdd } from "@fortawesome/free-solid-svg-icons";
 import { Link } from "@/navigation";
 
 type Props = {
-  params: { locale: string };
+  params: Promise<{ locale: string }>;
 };
 
-export default function AdminDownloadAreaPage({ params }: Props) {
+export default function AdminDownloadAreaPage(props: Props) {
+  const params = use(props.params);
   const trans = useTranslations("Download");
 
   const actions = (

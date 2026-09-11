@@ -1,12 +1,14 @@
+import { use } from "react";
 import { useTranslations } from "next-intl";
 import PostPanel from "./post-panel";
 import { normalPostColumnSelections } from "@/module/post/presenter/columnSelection";
 
 type Props = {
-  params: { locale: string };
+  params: Promise<{ locale: string }>;
 };
 
-export default function PostPage({ params }: Props) {
+export default function PostPage(props: Props) {
+  const params = use(props.params);
   const trans = useTranslations("Post");
 
   return (

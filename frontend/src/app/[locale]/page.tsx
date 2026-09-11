@@ -1,18 +1,17 @@
 import IndexMenu from "./index-menu";
-import NotFoundRedirect from "./redirect";
 import PostPanel from "./post/post-panel";
 import RestaurantPanel from "./restaurant/restaurant-panel";
 import Carousel from "./carousel";
 import { normalPostColumnSelections } from "@/module/post/presenter/columnSelection";
 
 type Props = {
-  params: { locale: string };
+  params: Promise<{ locale: string }>;
 };
 
-export default function HomePage({ params }: Props) {
+export default async function HomePage(props: Props) {
+  const params = await props.params;
   return (
     <>
-      <NotFoundRedirect />
       <div className="flex flex-row gap-10">
         <IndexMenu className="max-md:hidden" />
         <div className="flex flex-col flex-1 gap-10">

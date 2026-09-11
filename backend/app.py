@@ -1,9 +1,8 @@
 import json
-import uuid
 import logging.config
 from pathlib import Path
 
-from flask import Flask
+from flask import Flask, request
 from flasgger import Swagger
 from flask_cors import CORS
 
@@ -50,8 +49,6 @@ def get_config(status):
 
 def create_app(status='development'):
     app = Flask(__name__)
-    app.secret_key = uuid.uuid4().hex
-
     app.config.from_object(get_config(status))
     configure_logging(app)
     db.init_app(app)
@@ -59,8 +56,15 @@ def create_app(status='development'):
     Swagger(app, template=swagger_template)
     CORS(
         app,
-        resources={r"/*": {"origins": "*", "allow_headers": "*", "expose_headers": "*"}},
-        supports_credentials=True
+        resources={
+            r"/api/*": {
+                "origins": app.config['CORS_ORIGINS'],
+                "allow_headers": ["Authorization", "Content-Type", "X-CSRF-TOKEN"],
+                "methods": ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+            }
+        },
+        supports_credentials=True,
+        vary_header=True,
     )
     JWTManager(app)
 
@@ -82,6 +86,20 @@ def create_app(status='development'):
 
 
 app = create_app()
+
+
+@app.after_request
+def add_security_headers(response):
+    response.headers.setdefault('X-Content-Type-Options', 'nosniff')
+    response.headers.setdefault('X-Frame-Options', 'DENY')
+    response.headers.setdefault('Referrer-Policy', 'strict-origin-when-cross-origin')
+    response.headers.setdefault('Cross-Origin-Opener-Policy', 'same-origin')
+    response.headers.setdefault('Cross-Origin-Resource-Policy', 'same-origin')
+    response.headers.setdefault('Strict-Transport-Security', 'max-age=31536000; includeSubDomains')
+    if request.path.startswith('/api/auth/'):
+        response.headers['Cache-Control'] = 'private, no-store, max-age=0'
+        response.headers['Pragma'] = 'no-cache'
+    return response
 
 
 @app.route('/api/welcome', methods=['GET'])

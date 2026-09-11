@@ -21,6 +21,14 @@ services:
       - health-care-website
     ports:
       - 127.0.0.1:5001:5004
+    environment:
+      PORTAL_BASIC_AUTH: ${PORTAL_BASIC_AUTH:-}
+      PORTAL_CLIENT_ID: ${PORTAL_CLIENT_ID:-}
+      FLASK_SECRET_KEY: ${FLASK_SECRET_KEY:-}
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:-}
+      PORTAL_REDIRECT_URL: ${PORTAL_REDIRECT_URL:-https://health.ncu.edu.tw/api/auth/return-to}
+      HOME_PAGE_URL: ${HOME_PAGE_URL:-https://health.ncu.edu.tw/}
+      CORS_ORIGINS: ${CORS_ORIGINS:-https://health.ncu.edu.tw}
 
 networks:
   health-care-website:
