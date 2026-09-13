@@ -203,7 +203,7 @@ export default function PostEditor({
           }
           <Button className="border" onClick={() => { document.getElementById("upload")?.click() }}>
             <FontAwesomeIcon icon={faUpload} className="me-2 size-4" />
-            <input id="upload" type="file" className="hidden" multiple={true}
+            <input id="upload" aria-label={attachmentTrans("upload")} type="file" className="hidden" multiple={true}
               onChange={(event) => attachmentUploadAction.invoke(event.target.files)} />
             <span className="py-1">{attachmentTrans("upload")}</span>
           </Button>

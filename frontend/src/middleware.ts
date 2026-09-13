@@ -5,8 +5,7 @@ import UserUsecase from "./module/user/application/userUsecase";
 import UserRepoImpl from "./module/user/presenter/userRepoImpl";
 
 export const config = {
-    // Match only internationalized pathnames
-    matcher: ["/", "/(zh|en)/:path*"]
+    matcher: ["/((?!api|_next|.*\\..*).*)"]
 };
 
 const userUsecase = new UserUsecase(new UserRepoImpl());

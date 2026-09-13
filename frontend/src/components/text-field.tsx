@@ -1,7 +1,7 @@
 "use client";
 
 import ValidationInterface from "@/module/validation/domain/validationInterface";
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState } from "react";
 
 export type ValidateCallback = (text: string) => string;
 
@@ -34,6 +34,9 @@ export default function TextField({
   toValidate = false,
   validations = [],
 }: Props) {
+  const generatedId = useId();
+  const inputId = generatedId;
+  const accessibleLabel = labelText ?? label ?? placeholder ?? "文字輸入欄位";
   const [validationLock, setValidationLock] = useState<boolean>(false);
   const [validationResult, setValidationResult] = useState<string>("");
 
@@ -65,9 +68,11 @@ export default function TextField({
 
   return (
     <div className={`${className ?? ""} block w-full`}>
-      {label && <label htmlFor={label} className="label">{labelText ?? label}</label>}
+      {label && <label htmlFor={inputId} className="label">{labelText ?? label}</label>}
       <input
+        id={inputId}
         type="text"
+        aria-label={!label ? accessibleLabel : undefined}
         placeholder={placeholder}
         className={`w-full px-2 py-1.5 text-lg rounded-lg outline-none focus:outline-none focus:ring-2 focus:ring-opacity-30 focus:ring-yellow-900 transition-all duration-200
           ${shouldShowValidationError() ? "ring-2 ring-red-300" : "ring-1 ring-gray-200"}`}

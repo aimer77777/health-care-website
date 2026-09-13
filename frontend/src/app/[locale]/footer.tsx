@@ -6,7 +6,7 @@ import ViewCountViewModel from "@/module/view/presenter/viewCountViewModel";
 import { faEnvelope, faEye, faFax, faLocationDot, faPhone } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { useTranslations } from "next-intl";
-import Link from "next/link";
+import { Link } from "@/navigation";
 import { useEffect, useState } from "react";
 
 const usecase = new ViewCountUsecase(new ViewCountRepoImpl());

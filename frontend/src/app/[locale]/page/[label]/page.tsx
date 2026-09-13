@@ -60,7 +60,7 @@ export default async function StaticPage(props: Props) {
         <HeadInfo view={viewModel?.view} datetime={viewModel?.releasedDate}/>
       </div>
       <hr className="my-3" />
-      <QuillViewer value={(isEn ? viewModel?.contentEn : viewModel?.content) ?? ""} />
+      <QuillViewer value={(isEn ? viewModel?.contentEn : viewModel?.content) ?? ""} imageAlt={`${trans(params.label)}圖片`} />
       {attachments.length > 0 && <AttachmentPreview attachments={attachments} />}
     </div>
   );

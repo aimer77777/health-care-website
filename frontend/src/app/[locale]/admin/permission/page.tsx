@@ -80,6 +80,7 @@ export default function PermissionPage() {
                   <Table.Cell>{user.id}</Table.Cell>
                   <Table.Cell>
                     <select className="border rounded-sm h-7"
+                      aria-label={`${user.chineseName} ${trans("table_edit")}`}
                       value={UserRoleEnum[user.role]}
                       onChange={(event) => handleEdit(
                         user.id, UserRoleEnum[event.target.value as keyof typeof UserRoleEnum]
@@ -93,11 +94,17 @@ export default function PermissionPage() {
                     </select>
                   </Table.Cell>
                   <Table.Cell>
-                    <FontAwesomeIcon
-                      icon={faTrash}
-                      className="size-3 cursor-pointer text-red-600"
+                    <button
+                      type="button"
+                      aria-label={`${user.chineseName} ${trans("table_delete")}`}
                       onClick={() => { handleDelete(user.id) }}
-                    />
+                    >
+                      <FontAwesomeIcon
+                        icon={faTrash}
+                        className="size-3 cursor-pointer text-red-600"
+                        aria-hidden="true"
+                      />
+                    </button>
                   </Table.Cell>
                 </Table.Row>
               ))

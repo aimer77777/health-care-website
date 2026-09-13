@@ -125,8 +125,8 @@ export default function CarouselEditor({
           index={releaseStatusOptions.indexOf(defaultReleaseStatus)}
         />
         <div>
-          <label htmlFor={trans("upload")} className="label">{trans("upload")}</label>
-          <input type="file" accept="image/*" onChange={handleFileChange} disabled={defaultImageUrl !== undefined} />
+          <label htmlFor="carousel-image-upload" className="label">{trans("upload")}</label>
+          <input id="carousel-image-upload" aria-label={trans("upload")} type="file" accept="image/*" onChange={handleFileChange} disabled={defaultImageUrl !== undefined} />
         </div>
         {
           imageFileUrl !== null &&

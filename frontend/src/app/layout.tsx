@@ -10,7 +10,10 @@ const fontSans = Noto_Sans_TC({
 });
 
 export const metadata: Metadata = {
-  title: "中央大學衛生保健組",
+  title: {
+    default: "中央大學衛生保健組",
+    template: "%s | 中央大學衛生保健組",
+  },
   description: "健康檢查、緊急醫療、健康服務、健康職場、教育訓練、餐飲衛生、下載專區",
 };
 
@@ -20,7 +23,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="zh">
+    <html lang="zh-Hant-TW">
       <body className={fontSans.className}>
         <Theme>
           {children}

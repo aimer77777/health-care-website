@@ -51,7 +51,7 @@ export default async function PostPage(props: Props) {
         <HeadInfo view={viewModel.view} datetime={viewModel.releasedDate} />
       </div>
       <hr className="my-3" />
-      <QuillViewer value={isEn ? viewModel.contentEn : viewModel.content} />
+      <QuillViewer value={isEn ? viewModel.contentEn : viewModel.content} imageAlt={`${isEn ? viewModel.titleEn : viewModel.title}圖片`} />
       {
         attachments.length > 0 &&
         <AttachmentPreview className="mt-12" attachments={attachments} />

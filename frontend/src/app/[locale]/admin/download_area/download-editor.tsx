@@ -119,8 +119,8 @@ export default function DownloadEditor({
         index={releaseStatusOptions.indexOf(releaseStatus)}
       />
       <div>
-        <label htmlFor={trans("upload")} className="label">{trans("upload")}</label>
-        <input type="file" onChange={handleFileChange} disabled={download !== undefined} />
+        <label htmlFor="download-file-upload" className="label">{trans("upload")}</label>
+        <input id="download-file-upload" aria-label={trans("upload")} type="file" onChange={handleFileChange} disabled={download !== undefined} />
       </div>
       <TextField
         label={trans("chinese_title")}

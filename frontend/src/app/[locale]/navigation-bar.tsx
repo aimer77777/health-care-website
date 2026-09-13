@@ -102,23 +102,28 @@ export default function NavigationBar() {
             }
           </DropdownMenu>
         </div>
-        <Link href="https://www.instagram.com/ncu7270">
-          <Button>
-            <FontAwesomeIcon icon={faInstagram} className="size-5 my-0.5" />
+        <Link href="https://www.instagram.com/ncu7270" aria-label="Instagram" title="Instagram">
+          <Button ariaLabel="Instagram" title="Instagram">
+            <FontAwesomeIcon icon={faInstagram} className="size-5 my-0.5" aria-hidden="true" />
           </Button>
         </Link>
-        <Link href="https://www.facebook.com/profile.php?id=100057326145371">
-          <Button>
-            <FontAwesomeIcon icon={faFacebook} className="size-5 my-0.5" />
+        <Link href="https://www.facebook.com/profile.php?id=100057326145371" aria-label="Facebook" title="Facebook">
+          <Button ariaLabel="Facebook" title="Facebook">
+            <FontAwesomeIcon icon={faFacebook} className="size-5 my-0.5" aria-hidden="true" />
           </Button>
         </Link>
       </div>
 
       {/* Inner links */}
       <div className="flex flex-row justify-between items-center container mx-auto">
-        <div className="md:hidden" onClick={() => setIsDrawerOpen(true)}>
-          <FontAwesomeIcon icon={faBars} className="size-5" />
-        </div>
+        <button
+          type="button"
+          className="md:hidden"
+          aria-label={homeTrans("menu")}
+          onClick={() => setIsDrawerOpen(true)}
+        >
+          <FontAwesomeIcon icon={faBars} className="size-5" aria-hidden="true" />
+        </button>
         <div className="flex flex-row w-full justify-center md:justify-start">
           <Logo />
         </div>

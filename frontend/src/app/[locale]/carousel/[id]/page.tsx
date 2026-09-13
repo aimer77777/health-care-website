@@ -44,7 +44,7 @@ export default async function CarouselPage(props: Props) {
           />
         </Link>
       </div>
-      <QuillViewer value={isEn ? viewModel.contentEn : viewModel.content} />
+      <QuillViewer value={isEn ? viewModel.contentEn : viewModel.content} imageAlt={`${isEn ? viewModel.titleEn : viewModel.title}圖片`} />
     </>
   );
 }

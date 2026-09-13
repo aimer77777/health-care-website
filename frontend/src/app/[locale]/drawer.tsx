@@ -103,11 +103,11 @@ export default function Drawer({ isOpen, onClose: closeCallback }: Props) {
               </DropdownMenu>
             </ListTile>
             <div className="flex flex-row gap-2 w-fit mt-2 ms-1.5">
-              <Link href="https://www.instagram.com/ncu7270">
-                <FontAwesomeIcon icon={faInstagram} className="size-5 p-2 border border-gray-300 rounded-full" />
+              <Link href="https://www.instagram.com/ncu7270" aria-label="Instagram" title="Instagram">
+                <FontAwesomeIcon icon={faInstagram} className="size-5 p-2 border border-gray-300 rounded-full" aria-hidden="true" />
               </Link>
-              <Link href="https://www.facebook.com/profile.php?id=100057326145371">
-                <FontAwesomeIcon icon={faFacebook} className="size-5 p-2 border border-gray-300 rounded-full" />
+              <Link href="https://www.facebook.com/profile.php?id=100057326145371" aria-label="Facebook" title="Facebook">
+                <FontAwesomeIcon icon={faFacebook} className="size-5 p-2 border border-gray-300 rounded-full" aria-hidden="true" />
               </Link>
             </div>
           </div>
