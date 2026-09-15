@@ -16,7 +16,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { useTranslations } from "next-intl";
 import Image from "next/image";
 import { useEffect, useState } from "react";
-import ReactQuill from "react-quill";
+import type ReactQuill from "react-quill";
 
 type Props = {
   updateId?: number;

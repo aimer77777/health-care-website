@@ -4,18 +4,27 @@ import "./quill.css";
 import dynamic from "next/dynamic";
 import type ReactQuillType from "react-quill";
 import type { DeltaStatic, Sources } from "quill";
-import React, { useMemo, useRef, useState } from "react";
+import React, { Component, ReactNode, useMemo, useRef, useState } from "react";
 import ImageRepoImpl from "@/module/image/presenter/imageRepoImpl";
 import ImageUsecase from "@/module/image/application/imageUsecase";
 import ImageViewModel from "@/module/image/presenter/imageViewModel";
 
 const ReactQuill = dynamic(async () => {
   const reactQuillModule = await import("react-quill");
-  const imageResizeModule = await import("quill-image-resize-module-ts");
   const Quill = reactQuillModule.Quill ?? reactQuillModule.default.Quill;
-  Quill.register("modules/imageResize", imageResizeModule.ImageResize);
+
+  try {
+    const imageResizeModule = await import("quill-image-resize-module-ts");
+    Quill.register("modules/imageResize", imageResizeModule.ImageResize);
+  } catch (err) {
+    console.warn("Quill image resize module failed to load:", err);
+  }
+
   return reactQuillModule.default;
-}, { ssr: false }) as any;
+}, {
+  ssr: false,
+  loading: () => <EditorFallback />,
+}) as any;
 
 type Props = {
   className?: string;
@@ -76,17 +85,66 @@ export default function QuillEditor({
   return (
     <div className={`${className} w-full`}>
       {label && <label htmlFor={label} className="label">{label}</label>}
-      <ReactQuill
-        ref={quillRef}
-        theme="snow"
-        modules={modules}
-        className={`w-full text-lg rounded-lg outline-none transition-all duration-200
-            ${isFocus ? "ring-opacity-30 ring-yellow-900 ring-2" : "ring-gray-200 ring-1"}`}
-        value={value}
-        onChange={onChange}
-        onFocus={() => setIsFocus(true)}
-        onBlur={() => setIsFocus(false)}
-      />
+      <QuillErrorBoundary value={value} onChange={onChange}>
+        <ReactQuill
+          ref={quillRef}
+          theme="snow"
+          modules={modules}
+          className={`w-full text-lg rounded-lg outline-none transition-all duration-200
+              ${isFocus ? "ring-opacity-30 ring-yellow-900 ring-2" : "ring-gray-200 ring-1"}`}
+          value={value}
+          onChange={onChange}
+          onFocus={() => setIsFocus(true)}
+          onBlur={() => setIsFocus(false)}
+        />
+      </QuillErrorBoundary>
     </div>
   );
+}
+
+type FallbackProps = {
+  value?: ReactQuillType.Value;
+  onChange?(value: string, delta: DeltaStatic, source: Sources, editor: ReactQuillType.UnprivilegedEditor): void;
+};
+
+function EditorFallback({ value = "", onChange }: FallbackProps) {
+  return (
+    <textarea
+      className="min-h-52 w-full rounded-lg border border-gray-200 p-3 text-lg outline-none transition-all duration-200 focus:ring-2 focus:ring-yellow-900 focus:ring-opacity-30"
+      value={typeof value === "string" ? value : ""}
+      onChange={(event) => onChange?.(
+        event.target.value,
+        {} as DeltaStatic,
+        "user",
+        {} as ReactQuillType.UnprivilegedEditor,
+      )}
+    />
+  );
+}
+
+type ErrorBoundaryProps = FallbackProps & {
+  children: ReactNode;
+};
+
+class QuillErrorBoundary extends Component<ErrorBoundaryProps, { hasError: boolean }> {
+  constructor(props: ErrorBoundaryProps) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error: unknown) {
+    console.error("Quill editor failed to render:", error);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return <EditorFallback value={this.props.value} onChange={this.props.onChange} />;
+    }
+
+    return this.props.children;
+  }
 }

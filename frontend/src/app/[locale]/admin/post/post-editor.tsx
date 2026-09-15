@@ -25,7 +25,7 @@ import { faSave, faTrash, faUpload } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
-import ReactQuill from "react-quill";
+import type ReactQuill from "react-quill";
 
 type Props = {
   updateId?: number;
