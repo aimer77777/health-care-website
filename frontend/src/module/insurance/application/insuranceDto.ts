@@ -75,7 +75,7 @@ export class InsuranceRequest implements Partial<InsuranceEntity> {
             claim_date: this.claimDate?.toISOString(),
             remarks: this.remarks,
             insurance_company_stamp: this.insuranceCompanyStamp,
-            insurance_company_timestamp: this.insuranceCompanyTime?.toISOString(),
+            insurance_company_timestamp: this.insuranceCompanyStamp ? this.insuranceCompanyTime?.toISOString() : null,
         }
     }
 }

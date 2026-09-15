@@ -40,6 +40,7 @@ export default function middleware(request: NextRequest) {
     const handleI18nRouting = createMiddleware({
         locales: locales,
         defaultLocale: "zh",
+        localeDetection: false,
     })
     const response = handleI18nRouting(request);
 

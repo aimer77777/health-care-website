@@ -30,8 +30,8 @@ export default function Carousel({
       .catch((err) => console.error("Fetching carousel failed:", err));
   }, []);
 
-  const getNextIndex = (value: number): number => ((value + 1) % carousels.length);
-  const getPreviousIndex = (value: number): number => ((value - 1 + carousels.length) % carousels.length);
+  const getNextIndex = (value: number): number => carousels.length === 0 ? 0 : ((value + 1) % carousels.length);
+  const getPreviousIndex = (value: number): number => carousels.length === 0 ? 0 : ((value - 1 + carousels.length) % carousels.length);
 
   const goNext = () => setCurrentIndex(getNextIndex);
   const goPrevious = () => setCurrentIndex(getPreviousIndex);
@@ -65,9 +65,10 @@ export default function Carousel({
     const [resetKey, setResetKey] = useState<number>(0);
 
     useEffect(() => {
+      if (carousels.length <= 1) return;
       const timeout = setInterval(goNext, 3000);
       return () => { clearInterval(timeout) };
-    }, [resetKey]);
+    }, [resetKey, carousels.length]);
 
     const handleButtonClick = () => setResetKey((value) => value + 1);
 
@@ -77,22 +78,36 @@ export default function Carousel({
           carousels[currentIndex] &&
           <Link href={`/carousel/${carousels[currentIndex].id}`} className="absolute inset-0" />
         }
-        <FontAwesomeIcon
+        <button
           id="carousel-left-button"
-          icon={faAngleLeft}
-          className="absolute top-1/2 left-4 transform -translate-y-1/2 p-2 size-5 md:size-6 lg:size-7 rounded-full text-white bg-black bg-opacity-40 hover:bg-opacity-70 transition-color duration-200 cursor-pointer"
+          type="button"
+          aria-label="上一張輪播圖片"
+          className="absolute top-1/2 left-4 transform -translate-y-1/2 p-2 rounded-full text-white bg-black bg-opacity-40 hover:bg-opacity-70 transition-color duration-200 cursor-pointer"
           onClick={() => { goPrevious(); handleButtonClick() }}
-        />
-        <FontAwesomeIcon
+        >
+          <FontAwesomeIcon
+            icon={faAngleLeft}
+            className="size-5 md:size-6 lg:size-7"
+            aria-hidden="true"
+          />
+        </button>
+        <button
           id="carousel-right-button"
-          icon={faAngleRight}
-          className="absolute top-1/2 right-4 transform -translate-y-1/2 p-2 size-5 md:size-6 lg:size-7 rounded-full text-white bg-black bg-opacity-40 hover:bg-opacity-70 transition-color duration-200 cursor-pointer"
+          type="button"
+          aria-label="下一張輪播圖片"
+          className="absolute top-1/2 right-4 transform -translate-y-1/2 p-2 rounded-full text-white bg-black bg-opacity-40 hover:bg-opacity-70 transition-color duration-200 cursor-pointer"
           onClick={() => { goNext(); handleButtonClick() }}
-        />
+        >
+          <FontAwesomeIcon
+            icon={faAngleRight}
+            className="size-5 md:size-6 lg:size-7"
+            aria-hidden="true"
+          />
+        </button>
         <div className="absolute flex flex-row bottom-4 left-1/2 transform -translate-x-1/2 gap-1.5 md:gap-2">
           {
             Array.from({ length: carousels.length }).map((_, i) => (
-              <Circle key={i} isSelected={i === currentIndex} onClick={() => { setCurrentIndex(i); handleButtonClick() }} />
+              <Circle key={i} index={i} isSelected={i === currentIndex} onClick={() => { setCurrentIndex(i); handleButtonClick() }} />
             ))
           }
         </div>
@@ -101,16 +116,23 @@ export default function Carousel({
   }
 
   function Circle({
+    index,
     isSelected,
     onClick,
   }: {
+    index: number,
     isSelected: boolean,
-    onClick?: MouseEventHandler<HTMLDivElement>,
+    onClick?: MouseEventHandler<HTMLButtonElement>,
   }) {
     return (
-      <div className={`group relative size-3 md:size-4 rounded-full ${isSelected ? "bg-opacity-70" : "bg-opacity-40"} bg-black cursor-pointer`} onClick={onClick}>
+      <button
+        type="button"
+        aria-label={`切換至第 ${index + 1} 張輪播圖片`}
+        className={`group relative size-3 md:size-4 rounded-full ${isSelected ? "bg-opacity-70" : "bg-opacity-40"} bg-black cursor-pointer`}
+        onClick={onClick}
+      >
         <div className={`absolute inset-1/2 transform -translate-x-1/2 -translate-y-1/2 ${isSelected ? "size-1.5" : "size-0 group-hover:size-1"} transition-all duration-200 rounded-full bg-white bg-opacity-80`}></div>
-      </div>
+      </button>
     )
   }
 }

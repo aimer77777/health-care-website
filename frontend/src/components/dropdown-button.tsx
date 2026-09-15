@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import DropdownMenu from "./dropdown-menu";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faCaretDown } from "@fortawesome/free-solid-svg-icons";
@@ -20,10 +20,14 @@ export default function DropdownButton({
   labelText,
   options,
   onChange,
-  index: deafultIndex = 0,
+  index: defaultIndex = 0,
 }: Props) {
   const [isDropdownOpen, setIsDropdownOpen] = useState<boolean>(false);
-  const [selectedOptionIndex, setSelectedOptionIndex] = useState<number>(deafultIndex);
+  const [selectedOptionIndex, setSelectedOptionIndex] = useState<number>(defaultIndex);
+
+  useEffect(() => {
+    setSelectedOptionIndex(defaultIndex);
+  }, [defaultIndex]);
 
   const handleOptionClick = (index: number) => {
     setSelectedOptionIndex(index);
@@ -35,23 +39,29 @@ export default function DropdownButton({
   return (
     <div className="w-fit text-nowrap">
       {label && <label htmlFor={label} className="label">{labelText ?? label}</label>}
-      <div
+      <button
+        id={label}
+        type="button"
+        aria-haspopup="menu"
+        aria-expanded={isDropdownOpen}
         className={`rounded-lg border py-1 px-2 flex flex-row items-center gap-1.5 cursor-pointer ${className ?? ""}`}
         onClick={() => setIsDropdownOpen(true)}
       >
         {options[selectedOptionIndex]}
-        <FontAwesomeIcon icon={faCaretDown} className="mt-[-0.2rem] size-4" />
-      </div>
+        <FontAwesomeIcon icon={faCaretDown} className="mt-[-0.2rem] size-4" aria-hidden="true" />
+      </button>
       <DropdownMenu isOpen={isDropdownOpen} onCancel={() => setIsDropdownOpen(false)}>
         {
           options.map((option, index) => (
-            <div
+            <button
               key={index}
-              className="px-2 py-1 rounded-md cursor-pointer hover:bg-black hover:bg-opacity-5"
+              type="button"
+              role="menuitem"
+              className="block w-full text-left px-2 py-1 rounded-md cursor-pointer hover:bg-black hover:bg-opacity-5"
               onClick={() => handleOptionClick(index)}
             >
               {option}
-            </div>
+            </button>
           ))
         }
       </DropdownMenu>

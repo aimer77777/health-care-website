@@ -77,8 +77,10 @@ class InsuranceContainer:
             self.data["claim_date"] = datetime.fromisoformat(json_request["claim_date"])
 
         if "insurance_company_timestamp" in json_request:
-            self.data["insurance_company_timestamp"] = datetime.fromisoformat(
-                json_request["insurance_company_timestamp"])
+            self.data["insurance_company_timestamp"] = (
+                datetime.fromisoformat(json_request["insurance_company_timestamp"])
+                if json_request["insurance_company_timestamp"] else None
+            )
 
     def get_data(self):
         return self.data
@@ -324,7 +326,10 @@ def patch_insurance(id_):
     if "insurance_company_stamp" in request.json:
         insurance.insurance_company_stamp = request.json["insurance_company_stamp"]
     if "insurance_company_timestamp" in request.json:
-        insurance.insurance_company_timestamp = datetime.fromisoformat(request.json["insurance_company_timestamp"])
+        insurance.insurance_company_timestamp = (
+            datetime.fromisoformat(request.json["insurance_company_timestamp"])
+            if request.json["insurance_company_timestamp"] else None
+        )
 
     db.session.commit()
     return CustomResponse.no_content("patch insurance success", insurance.to_dict())

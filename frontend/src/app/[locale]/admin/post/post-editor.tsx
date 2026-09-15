@@ -72,6 +72,7 @@ export default function PostEditor({
   const [uploadingProgressMap, setUploadingProgressMap] = useState<UploadingPregressMap>({});
   const [toValidate, setToValidate] = useState<boolean>(false);
   const [isValidationPassed, setIsValidationPassed] = useState<boolean[]>([]);
+  const [saveError, setSaveError] = useState<string>("");
 
   const postUsecase = new NormalPostUsecase(new PostRepoImpl());
   const attachmentUsecase = new AttachmentUsecase(new AttachmentRepoImpl());
@@ -82,10 +83,22 @@ export default function PostEditor({
     setUploadingProgressMap: setUploadingProgressMap,
   });
 
-  const titleValidations = (length: number) => [
+  const requiredTitleValidations = (length: number) => [
     new NotEmptyValidationUsecase(trans("validate_empty")),
     new LengthValidationUsecase(length, trans("validate_length", { length: length })),
   ];
+
+  const optionalTitleValidations = (length: number) => [
+    new LengthValidationUsecase(length, trans("validate_length", { length: length })),
+  ];
+
+  function richTextHasContent(value: string) {
+    if (/<img\b/i.test(value)) return true;
+    return value
+      .replace(/<[^>]+>/g, "")
+      .replace(/&nbsp;/g, " ")
+      .trim().length > 0;
+  }
 
   function handleValidate(result: boolean) {
     setToValidate(false);
@@ -101,6 +114,7 @@ export default function PostEditor({
 
   // To validate and change the values in `isValidationPassed` to invoke useEffect
   function handleSave() {
+    setSaveError("");
     setIsValidationPassed([]);
     setToValidate(true);
   }
@@ -118,11 +132,13 @@ export default function PostEditor({
     if (isValidationPassed.length < 2 ||
       isValidationPassed.filter((value) => !value).length > 0) return;
 
+    const chineseContentText = chineseContent.toString();
+    const englishContentText = englishContent.toString();
     const postRequest = new NormalPostRequest({
       title: chineseTitle,
-      titleEn: englishTitle,
-      content: chineseContent.toString(),
-      contentEn: englishContent.toString(),
+      titleEn: englishTitle.trim().length > 0 ? englishTitle : chineseTitle,
+      content: chineseContentText,
+      contentEn: richTextHasContent(englishContentText) ? englishContentText : chineseContentText,
       attachments: attachments.map((attachment) => attachment.id),
       column: column,
       visibility: releaseStatus === ReleaseStatusEnum.Released,
@@ -135,7 +151,10 @@ export default function PostEditor({
     ).then(
       () => router.push(backUrl)
     ).catch(
-      (err) => console.error(`${updateId === undefined ? "Creating" : "Updating"} post failed:`, err)
+      (err) => {
+        console.error(`${updateId === undefined ? "Creating" : "Updating"} post failed:`, err);
+        setSaveError(err?.response?.data?.message ?? err?.message ?? trans("save"));
+      }
     );
   }, [isValidationPassed]);
 
@@ -156,14 +175,14 @@ export default function PostEditor({
             options={releaseStatusOptions.map((option) => statusTrans(option))}
             className="h-10"
             onChange={(index) => setReleaseStatus(releaseStatusOptions[index])}
-            index={releaseStatusOptions.indexOf(defaultReleaseStatus)}
+            index={releaseStatusOptions.indexOf(releaseStatus)}
           />
           <DropdownButton
             label={statusTrans("importance")}
             options={importanceOptions.map((option) => statusTrans(option))}
             className="h-10"
             onChange={(index) => setImportance(importanceOptions[index])}
-            index={importanceOptions.indexOf(defaultImportance)}
+            index={importanceOptions.indexOf(importance)}
           />
         </div>
         <div className="flex flex-col gap-4">
@@ -172,7 +191,7 @@ export default function PostEditor({
             value={chineseTitle}
             onChange={setChineseTitle}
             onValidate={handleValidate}
-            validations={titleValidations(40)}
+            validations={requiredTitleValidations(40)}
             toValidate={toValidate}
           />
           <QuillEditor label={trans("chinese_content")} value={chineseContent} onChange={setChineseContent} />
@@ -181,7 +200,7 @@ export default function PostEditor({
             value={englishTitle}
             onChange={setEnglishTitle}
             onValidate={handleValidate}
-            validations={titleValidations(100)}
+            validations={optionalTitleValidations(100)}
             toValidate={toValidate}
           />
           <QuillEditor label={trans("english_content")} value={englishContent} onChange={setEnglishContent} />
@@ -193,6 +212,7 @@ export default function PostEditor({
           uploadingProgressMap={uploadingProgressMap}
           onChange={setAttachments}
         />
+        {saveError && <p className="text-red-500 text-sm font-medium">{saveError}</p>}
         <div className="flex flex-row justify-end gap-2">
           {
             updateId !== undefined &&

@@ -84,8 +84,11 @@ export default function InsuranceEditor({
 
   const [toValidate, setToValidate] = useState<boolean>(false);
   const [isValidationPassed, setIsValidationPassed] = useState<boolean[]>([]);
+  const [saveError, setSaveError] = useState<string>("");
+  const [hasPersonalDataConsent, setHasPersonalDataConsent] = useState<boolean>(false);
 
   const usecase = new InsuranceUsecase(new InsuranceRepoImpl());
+  const personalDataConsent = personalDataConsentContent(locale);
 
   function handleValidate(result: boolean) {
     setToValidate(false);
@@ -100,6 +103,11 @@ export default function InsuranceEditor({
   }
 
   function handleSave() {
+    setSaveError("");
+    if (!hasPersonalDataConsent) {
+      setSaveError(personalDataConsent.requiredMessage);
+      return;
+    }
     setIsValidationPassed([]);
     setToValidate(true);
   }
@@ -136,7 +144,14 @@ export default function InsuranceEditor({
     (updateId === undefined
       ? usecase.createInsurance(request)
       : usecase.updateInsurance(updateId, request)
-    ).then(() => router.push("/admin/insurance"));
+    ).then(
+      () => router.push("/admin/insurance")
+    ).catch(
+      (err) => {
+        console.error(`${updateId === undefined ? "Creating" : "Updating"} insurance failed:`, err);
+        setSaveError(err?.response?.data?.message ?? err?.message ?? trans("save"));
+      }
+    );
   }, [isValidationPassed]);
 
   return (
@@ -315,27 +330,60 @@ export default function InsuranceEditor({
           value={remarks}
           onChange={setRemarks}
         />
+        <section className="rounded-lg border border-gray-200 p-4">
+          <h2 className="text-xl font-semibold">{personalDataConsent.title}</h2>
+          <div className="mt-3 max-h-72 overflow-y-auto rounded-md border border-gray-200 bg-gray-50 p-3 text-sm leading-7">
+            {personalDataConsent.sections.map((section, index) => (
+              <div key={index} className={index === 0 ? "" : "mt-4"}>
+                {section.heading && <h3 className="font-semibold">{section.heading}</h3>}
+                {section.paragraphs.map((paragraph, paragraphIndex) => (
+                  <p key={paragraphIndex} className="mt-1">{paragraph}</p>
+                ))}
+              </div>
+            ))}
+          </div>
+          <label htmlFor="personal_data_consent" className="mt-3 flex flex-row gap-2 items-start">
+            <input
+              id="personal_data_consent"
+              type="checkbox"
+              className="mt-1 size-4 shrink-0"
+              checked={hasPersonalDataConsent}
+              onChange={(event) => {
+                setHasPersonalDataConsent(event.target.checked);
+                if (event.target.checked && saveError === personalDataConsent.requiredMessage) {
+                  setSaveError("");
+                }
+              }}
+            />
+            <span>{personalDataConsent.checkboxLabel}</span>
+          </label>
+        </section>
         <div>
           <label htmlFor="insurance_company_stamp" className="label">{trans("insurance_company_stamp")}</label>
           <div className="flex flex-row gap-2 items-center">
             <input
+              id="insurance_company_stamp"
               type="checkbox"
               className="size-4 my-1"
-              defaultChecked={insuranceCompanyStamp}
-              onChange={() => setInsuranceCompanyStamp((prev) => {
-                if (!prev) setInsuranceCompanyTime(new Date());
-                else setInsuranceCompanyTime(undefined);
-                return !prev;
-              })}
+              checked={insuranceCompanyStamp}
+              onChange={(event) => {
+                const checked = event.target.checked;
+                setInsuranceCompanyStamp(checked);
+                setInsuranceCompanyTime(checked ? (insuranceCompanyTime ?? new Date()) : undefined);
+              }}
             />
             {insuranceCompanyStamp && (
               <DateField
+                label="insurance_company_timestamp"
+                labelText={trans("insurance_company_time")}
+                locale={locale}
                 value={insuranceCompanyTime}
                 onChange={setInsuranceCompanyTime}
               />
             )}
           </div>
         </div>
+        {saveError && <p className="text-red-500 text-sm font-medium">{saveError}</p>}
         <div className="flex flex-row justify-end gap-2">
           {
             updateId !== undefined &&
@@ -390,3 +438,110 @@ const locationOptions = [
 ];
 
 const numberOptions = [0, 1, 2, 3];
+
+function personalDataConsentContent(locale: string) {
+  if (locale === "en") {
+    return {
+      title: "Student Group Insurance Personal Data Consent",
+      checkboxLabel: "I confirm that the applicant has read and accepted the personal data consent statement above.",
+      requiredMessage: "Please confirm the personal data consent before saving this insurance record.",
+      sections: [
+        {
+          heading: "",
+          paragraphs: [
+            "By checking this consent item, the applicant confirms that they have read, understood, and agreed to the contents of this consent statement. If the applicant is under the age of 18, their legal representative should also read, understand, and agree to the statement before this service is used.",
+          ],
+        },
+        {
+          heading: "Collection, update, and retention of basic personal data",
+          paragraphs: [
+            "National Central University collects, processes, and uses personal data in accordance with the Personal Data Protection Act and related laws, as well as the university privacy policy.",
+            "The applicant should provide accurate, current, and complete personal data. Personal data collected for student group insurance may include name, student ID number, national ID number, address, contact information including phone and email, health condition, medical documents, and related receipts.",
+            "If the applicant's personal data changes, the applicant should request correction so that the data remains accurate, current, and complete. If incorrect, outdated, incomplete, false, or misleading data is provided, related rights and interests may be affected.",
+            "The applicant may exercise rights under the Personal Data Protection Act, including requesting inquiry or review, requesting copies, requesting supplementation or correction, requesting cessation of collection, processing, or use, and requesting deletion. The university may refuse a request when the data is necessary for official duties or business operations.",
+          ],
+        },
+        {
+          heading: "Purpose of collecting personal data",
+          paragraphs: [
+            "The university collects personal data for student group insurance application, claim handling, and related contact and administrative operations.",
+            "If the university needs to use personal data in a way different from the original collection purpose, written consent will be obtained before use. The applicant may refuse to provide personal data, but related rights and services may be affected.",
+            "The period of use is within 10 years from the date of consent, and the area of use is Taiwan.",
+          ],
+        },
+        {
+          heading: "Confidentiality of basic personal data",
+          paragraphs: [
+            "The applicant's personal data is protected and governed by the university privacy policy. If personal data is stolen, leaked, altered, or otherwise infringed due to violation of the Personal Data Protection Act or due to natural disaster, incident, or other force majeure, the university will notify the applicant by phone, mail, email, website announcement, or another appropriate method after investigation.",
+          ],
+        },
+        {
+          heading: "Effect of this consent statement",
+          paragraphs: [
+            "Checking this consent item means the applicant has read, understood, and agreed to all contents of this consent statement.",
+            "The university reserves the right to amend this consent statement. Amendments will be announced on the university website and will not be individually notified.",
+            "Any advice or information obtained from this consent statement, whether written or oral, does not constitute any warranty beyond the express provisions of this statement.",
+          ],
+        },
+        {
+          heading: "Governing law and jurisdiction",
+          paragraphs: [
+            "The interpretation, application, and disputes related to this consent statement shall be handled in accordance with the laws of the Republic of China, with the Taiwan Taoyuan District Court as the court of jurisdiction.",
+          ],
+        },
+      ],
+    };
+  }
+
+  return {
+    title: "學生團體保險個人資料提供同意書",
+    checkboxLabel: "已確認申請人已閱讀並接受上述個人資料提供同意書內容",
+    requiredMessage: "請先確認申請人已閱讀並接受個人資料提供同意書內容，再儲存保險記錄。",
+    sections: [
+      {
+        heading: "",
+        paragraphs: [
+          "當申請人勾選同意並簽署本同意書時，表示申請人已閱讀、瞭解並同意接受本同意書之所有內容及其後修改變更規定。若申請人未滿十八歲，應於法定代理人閱讀、瞭解並同意本同意書之所有內容及其後修改變更規定後，方得使用本服務；若已接受本服務，視為已取得法定代理人之同意，並遵守以下所有規範。",
+        ],
+      },
+      {
+        heading: "一、基本資料之蒐集、更新及保管",
+        paragraphs: [
+          "本校蒐集申請人之個人資料，係在中華民國個人資料保護法與相關法令之規範下，依據本校隱私權政策聲明，蒐集、處理及利用個人資料。",
+          "請於申請時提供申請人本人正確、最新及完整的個人資料。",
+          "本校因辦理學生團體保險申請、理賠及相關聯繫作業所蒐集之個人資料，包括姓名、學號、身分證字號、地址、聯絡方式（電話、E-Mail）、健康情形、醫療文件與相關收據等。",
+          "若申請人個人資料有任何異動，請主動向本校申請更正，使其保持正確、最新及完整。若提供錯誤、不實、過時、不完整或具誤導性的資料，申請人將可能損失相關權益。",
+          "申請人可依中華民國個人資料保護法，就個人資料請求查詢或閱覽、製給複製本、補充或更正、停止蒐集處理及利用、刪除。但因本校執行職務或業務所必須者，本校得拒絕之。若因申請人行使上述權利而導致權益受損時，本校將不負相關賠償責任。",
+        ],
+      },
+      {
+        heading: "二、蒐集個人資料之目的",
+        paragraphs: [
+          "本校為辦理學生團體保險申請、理賠及相關聯繫作業，需蒐集申請人之個人資料。",
+          "當申請人個人資料使用方式與原蒐集目的不同時，本校會在使用前先徵求書面同意。申請人可以拒絕向本校提供個人資料，但可能因此喪失相關權益。",
+          "本校利用申請人個人資料期間為即日起十年內，利用地區為臺灣地區。",
+        ],
+      },
+      {
+        heading: "三、基本資料之保密",
+        paragraphs: [
+          "申請人之個人資料受到本校隱私權政策聲明之保護及規範。本校如違反個人資料保護法規定，或因天災、事變或其他不可抗力所致，使申請人個人資料被竊取、洩漏、竄改或遭其他侵害者，本校將於查明後以電話、信函、電子郵件或網站公告等方式，擇適當方式通知申請人。",
+        ],
+      },
+      {
+        heading: "四、同意書之效力",
+        paragraphs: [
+          "當申請人勾選同意並簽署本同意書時，即表示已閱讀、瞭解並同意本同意書之所有內容。",
+          "本校保留隨時修改本同意書規範之權利，並將於修改規範時於本校網頁公告修改事實，不另作個別通知。若不同意修改內容，請勿繼續接受本服務；否則將視為已同意並接受本同意書增訂或修改內容之拘束。",
+          "申請人自本同意書取得之任何建議或資訊，無論為書面或口頭形式，除非本同意書條款有明確規定，均不構成本同意書條款以外之任何保證。",
+        ],
+      },
+      {
+        heading: "五、準據法與管轄法院",
+        paragraphs: [
+          "本同意書之解釋與適用，以及與本同意書有關之爭議，均應依照中華民國法律處理，並以臺灣桃園地方法院為管轄法院。",
+        ],
+      },
+    ],
+  };
+}

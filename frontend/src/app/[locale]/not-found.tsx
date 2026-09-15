@@ -1,11 +1,11 @@
 import Link from "next/link";
 
 type Props = {
-  params: { locale: string };
+  params?: { locale?: string };
 };
 
 export default function LocalizedNotFound({ params }: Props) {
-  const isEnglish = params.locale === "en";
+  const isEnglish = params?.locale === "en";
 
   return (
     <main className="min-h-[80vh] flex flex-col justify-center items-center text-center gap-4">

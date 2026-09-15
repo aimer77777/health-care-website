@@ -1,21 +1,27 @@
 "use client";
 
 import "./quill.css";
-import ReactQuill, { Quill } from "react-quill";
-import { DeltaStatic, Sources } from "quill";
+import dynamic from "next/dynamic";
+import type ReactQuillType from "react-quill";
+import type { DeltaStatic, Sources } from "quill";
 import React, { useMemo, useRef, useState } from "react";
-import { ImageResize } from "quill-image-resize-module-ts";
 import ImageRepoImpl from "@/module/image/presenter/imageRepoImpl";
 import ImageUsecase from "@/module/image/application/imageUsecase";
 import ImageViewModel from "@/module/image/presenter/imageViewModel";
 
-Quill.register("modules/imageResize", ImageResize);
+const ReactQuill = dynamic(async () => {
+  const reactQuillModule = await import("react-quill");
+  const imageResizeModule = await import("quill-image-resize-module-ts");
+  const Quill = reactQuillModule.Quill ?? reactQuillModule.default.Quill;
+  Quill.register("modules/imageResize", imageResizeModule.ImageResize);
+  return reactQuillModule.default;
+}, { ssr: false }) as any;
 
 type Props = {
   className?: string;
   label?: string;
-  value?: ReactQuill.Value;
-  onChange?(value: string, delta: DeltaStatic, source: Sources, editor: ReactQuill.UnprivilegedEditor): void;
+  value?: ReactQuillType.Value;
+  onChange?(value: string, delta: DeltaStatic, source: Sources, editor: ReactQuillType.UnprivilegedEditor): void;
 };
 
 export default function QuillEditor({
@@ -24,7 +30,7 @@ export default function QuillEditor({
   value,
   onChange,
 }: Props) {
-  const quillRef = useRef<ReactQuill>(new ReactQuill({}));
+  const quillRef = useRef<ReactQuillType | null>(null);
 
   const [isFocus, setIsFocus] = useState<boolean>(false);
 
@@ -53,7 +59,8 @@ export default function QuillEditor({
 
             usecase.uploadImage(file).then((image) => {
               const vm = new ImageViewModel(image);
-              const editor = quillRef.current.getEditor();
+              const editor = quillRef.current?.getEditor();
+              if (!editor) return;
               const range = editor.getSelection();
               editor.insertEmbed(range?.index ?? 0, "image", vm.url);
             });
