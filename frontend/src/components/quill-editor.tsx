@@ -4,7 +4,7 @@ import "./quill.css";
 import dynamic from "next/dynamic";
 import type ReactQuillType from "react-quill";
 import type { DeltaStatic, Sources } from "quill";
-import React, { Component, ReactNode, useMemo, useRef, useState } from "react";
+import React, { Component, ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import ImageRepoImpl from "@/module/image/presenter/imageRepoImpl";
 import ImageUsecase from "@/module/image/application/imageUsecase";
 import ImageViewModel from "@/module/image/presenter/imageViewModel";
@@ -42,6 +42,80 @@ export default function QuillEditor({
   const quillRef = useRef<ReactQuillType | null>(null);
 
   const [isFocus, setIsFocus] = useState<boolean>(false);
+  const [editorRoot, setEditorRoot] = useState<HTMLElement | null>(null);
+
+  const uploadAndInsertImages = useCallback(async (files: File[], index?: number) => {
+    const editor = quillRef.current?.getEditor();
+    if (!editor || files.length === 0) return;
+
+    const usecase = new ImageUsecase(new ImageRepoImpl());
+    let insertIndex = index ?? editor.getSelection()?.index ?? editor.getLength();
+
+    for (const file of files) {
+      try {
+        const image = await usecase.uploadImage(file);
+        const vm = new ImageViewModel(image);
+        editor.insertEmbed(insertIndex, "image", vm.url, "user");
+        editor.insertText(insertIndex + 1, "\n", "user");
+        insertIndex += 2;
+        editor.setSelection(insertIndex, 0, "silent");
+      } catch (err) {
+        console.error("Failed to upload pasted image:", err);
+      }
+    }
+  }, []);
+
+  const handleQuillRef = useCallback((instance: ReactQuillType | null) => {
+    quillRef.current = instance;
+    setEditorRoot(instance?.getEditor().root ?? null);
+  }, []);
+
+  useEffect(() => {
+    if (!editorRoot || !quillRef.current) return;
+
+    function handlePaste(event: ClipboardEvent) {
+      const files = getImageFilesFromDataTransfer(event.clipboardData);
+      if (files.length === 0) return;
+
+      const editor = quillRef.current?.getEditor();
+      if (!editor) return;
+
+      event.preventDefault();
+      void uploadAndInsertImages(files, editor.getSelection()?.index ?? editor.getLength());
+    }
+
+    function handleDrop(event: DragEvent) {
+      const files = getImageFilesFromDataTransfer(event.dataTransfer);
+      if (files.length === 0) return;
+
+      const editor = quillRef.current?.getEditor();
+      if (!editor) return;
+
+      event.preventDefault();
+      const range = document.caretRangeFromPoint?.(event.clientX, event.clientY);
+      if (range) {
+        const selection = window.getSelection();
+        selection?.removeAllRanges();
+        selection?.addRange(range);
+      }
+      void uploadAndInsertImages(files, editor.getSelection()?.index ?? editor.getLength());
+    }
+
+    function handleDragOver(event: DragEvent) {
+      if (getImageFilesFromDataTransfer(event.dataTransfer).length === 0) return;
+      event.preventDefault();
+    }
+
+    editorRoot.addEventListener("paste", handlePaste);
+    editorRoot.addEventListener("dragover", handleDragOver);
+    editorRoot.addEventListener("drop", handleDrop);
+
+    return () => {
+      editorRoot.removeEventListener("paste", handlePaste);
+      editorRoot.removeEventListener("dragover", handleDragOver);
+      editorRoot.removeEventListener("drop", handleDrop);
+    };
+  }, [editorRoot, uploadAndInsertImages]);
 
   const modules = useMemo(() => ({
     toolbar: {
@@ -64,15 +138,8 @@ export default function QuillEditor({
             const file = fileInput.files?.item(0);
             if (!file) return;
 
-            const usecase = new ImageUsecase(new ImageRepoImpl());
-
-            usecase.uploadImage(file).then((image) => {
-              const vm = new ImageViewModel(image);
-              const editor = quillRef.current?.getEditor();
-              if (!editor) return;
-              const range = editor.getSelection();
-              editor.insertEmbed(range?.index ?? 0, "image", vm.url);
-            });
+            const editor = quillRef.current?.getEditor();
+            void uploadAndInsertImages([file], editor?.getSelection()?.index);
           };
         }
       },
@@ -80,14 +147,14 @@ export default function QuillEditor({
     imageResize: {
       modules: ["Resize", "DisplaySize"],
     },
-  }), []);
+  }), [uploadAndInsertImages]);
 
   return (
     <div className={`${className} w-full`}>
       {label && <label htmlFor={label} className="label">{label}</label>}
       <QuillErrorBoundary value={value} onChange={onChange}>
         <ReactQuill
-          ref={quillRef}
+          ref={handleQuillRef}
           theme="snow"
           modules={modules}
           className={`w-full text-lg rounded-lg outline-none transition-all duration-200
@@ -100,6 +167,26 @@ export default function QuillEditor({
       </QuillErrorBoundary>
     </div>
   );
+}
+
+function getImageFilesFromDataTransfer(data?: DataTransfer | null) {
+  const filesFromItems = getImageFilesFromItems(data?.items);
+  return filesFromItems.length > 0 ? filesFromItems : getImageFilesFromList(data?.files);
+}
+
+function getImageFilesFromItems(items?: DataTransferItemList | null) {
+  if (!items) return [];
+
+  return Array.from(items)
+    .filter((item) => item.kind === "file" && item.type.startsWith("image/"))
+    .map((item) => item.getAsFile())
+    .filter((file): file is File => file !== null);
+}
+
+function getImageFilesFromList(fileList?: FileList | null) {
+  if (!fileList) return [];
+
+  return Array.from(fileList).filter((file) => file.type.startsWith("image/"));
 }
 
 type FallbackProps = {
