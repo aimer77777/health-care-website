@@ -1,36 +1,20 @@
 "use client";
 
 import "./quill.css";
-import dynamic from "next/dynamic";
-import type ReactQuillType from "react-quill";
+import type QuillType from "quill";
 import type { DeltaStatic, Sources } from "quill";
-import React, { Component, ReactNode, useCallback, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import ImageRepoImpl from "@/module/image/presenter/imageRepoImpl";
 import ImageUsecase from "@/module/image/application/imageUsecase";
 import ImageViewModel from "@/module/image/presenter/imageViewModel";
 
-const ReactQuill = dynamic(async () => {
-  const reactQuillModule = await import("react-quill");
-  const Quill = reactQuillModule.Quill ?? reactQuillModule.default.Quill;
-
-  try {
-    const imageResizeModule = await import("quill-image-resize-module-ts");
-    Quill.register("modules/imageResize", imageResizeModule.ImageResize);
-  } catch (err) {
-    console.warn("Quill image resize module failed to load:", err);
-  }
-
-  return reactQuillModule.default;
-}, {
-  ssr: false,
-  loading: () => <EditorFallback />,
-}) as any;
+type QuillValue = string | DeltaStatic;
 
 type Props = {
   className?: string;
   label?: string;
-  value?: ReactQuillType.Value;
-  onChange?(value: string, delta: DeltaStatic, source: Sources, editor: ReactQuillType.UnprivilegedEditor): void;
+  value?: QuillValue;
+  onChange?(value: string, delta: DeltaStatic, source: Sources, editor: QuillType): void;
 };
 
 export default function QuillEditor({
@@ -39,12 +23,20 @@ export default function QuillEditor({
   value,
   onChange,
 }: Props) {
-  const quillRef = useRef<ReactQuillType | null>(null);
+  const editorContainerRef = useRef<HTMLDivElement | null>(null);
+  const quillRef = useRef<QuillType | null>(null);
+  const onChangeRef = useRef(onChange);
+  const lastHtmlRef = useRef<string>("");
 
   const [isFocus, setIsFocus] = useState<boolean>(false);
+  const [hasEditorError, setHasEditorError] = useState<boolean>(false);
+
+  useEffect(() => {
+    onChangeRef.current = onChange;
+  }, [onChange]);
 
   const uploadAndInsertImages = useCallback(async (files: File[], index?: number) => {
-    const editor = quillRef.current?.getEditor();
+    const editor = quillRef.current;
     if (!editor || files.length === 0) return;
 
     const usecase = new ImageUsecase(new ImageRepoImpl());
@@ -59,20 +51,119 @@ export default function QuillEditor({
         insertIndex += 2;
         editor.setSelection(insertIndex, 0, "silent");
       } catch (err) {
-        console.error("Failed to upload pasted image:", err);
+        console.error("Failed to upload image:", err);
       }
     }
   }, []);
 
-  const handleQuillRef = useCallback((instance: ReactQuillType | null) => {
-    quillRef.current = instance;
-  }, []);
+  const modules = useMemo(() => ({
+    toolbar: {
+      container: [
+        [{ header: [2, 3, 4, false] }],
+        ["bold", "italic", "underline", "strike", "blockquote"],
+        [{ color: [] }, { background: [] }],
+        [{ list: "ordered" }, { list: "bullet" }],
+        ["link", "image"],
+        ["clean"],
+      ],
+      handlers: {
+        image: function () {
+          const fileInput = document.createElement("input");
+          fileInput.setAttribute("type", "file");
+          fileInput.setAttribute("accept", "image/*");
+          fileInput.click();
+
+          fileInput.onchange = () => {
+            const file = fileInput.files?.item(0);
+            if (!file) return;
+
+            const editor = quillRef.current;
+            void uploadAndInsertImages([file], editor?.getSelection()?.index);
+          };
+        },
+      },
+    },
+    imageResize: {
+      modules: ["Resize", "DisplaySize"],
+    },
+  }), [uploadAndInsertImages]);
+
+  useEffect(() => {
+    if (!editorContainerRef.current || quillRef.current) return;
+
+    let isDisposed = false;
+
+    async function initializeEditor() {
+      try {
+        const quillModule = await import("quill");
+        const Quill = (quillModule.default ?? quillModule) as typeof QuillType;
+
+        try {
+          const imageResizeModule = await import("quill-image-resize-module-ts");
+          if (!(Quill as any).imports?.["modules/imageResize"]) {
+            Quill.register("modules/imageResize", imageResizeModule.ImageResize);
+          }
+        } catch (err) {
+          console.warn("Quill image resize module failed to load:", err);
+        }
+
+        if (isDisposed || !editorContainerRef.current) return;
+
+        const editor = new Quill(editorContainerRef.current, {
+          theme: "snow",
+          modules,
+        });
+
+        quillRef.current = editor;
+        setHasEditorError(false);
+
+        const initialHtml = valueToHtml(value);
+        if (initialHtml) {
+          editor.clipboard.dangerouslyPasteHTML(initialHtml, "silent");
+        }
+        lastHtmlRef.current = editor.root.innerHTML;
+
+        editor.on("text-change", (delta: DeltaStatic, _oldDelta: DeltaStatic, source: Sources) => {
+          const html = editor.root.innerHTML;
+          lastHtmlRef.current = html;
+          onChangeRef.current?.(html, delta, source, editor);
+        });
+
+        editor.on("selection-change", (range) => {
+          setIsFocus(range !== null);
+        });
+      } catch (err) {
+        console.error("Quill editor failed to initialize:", err);
+        setHasEditorError(true);
+      }
+    }
+
+    void initializeEditor();
+
+    return () => {
+      isDisposed = true;
+      quillRef.current = null;
+    };
+  }, [modules, value]);
+
+  useEffect(() => {
+    const editor = quillRef.current;
+    if (!editor) return;
+
+    const nextHtml = valueToHtml(value);
+    if (nextHtml === lastHtmlRef.current) return;
+
+    const range = editor.getSelection();
+    editor.clipboard.dangerouslyPasteHTML(nextHtml, "silent");
+    lastHtmlRef.current = editor.root.innerHTML;
+    if (range) editor.setSelection(range, "silent");
+  }, [value]);
 
   const handlePasteCapture = useCallback((event: React.ClipboardEvent<HTMLDivElement>) => {
     const files = getImageFilesFromDataTransfer(event.clipboardData);
     if (files.length === 0) return;
 
-    const editor = quillRef.current?.getEditor();
+    const editor = quillRef.current;
     if (!editor) return;
 
     event.preventDefault();
@@ -91,7 +182,7 @@ export default function QuillEditor({
     const files = getImageFilesFromDataTransfer(event.dataTransfer);
     if (files.length === 0) return;
 
-    const editor = quillRef.current?.getEditor();
+    const editor = quillRef.current;
     if (!editor) return;
 
     event.preventDefault();
@@ -99,61 +190,29 @@ export default function QuillEditor({
     void uploadAndInsertImages(files, editor.getSelection()?.index ?? editor.getLength());
   }, [uploadAndInsertImages]);
 
-  const modules = useMemo(() => ({
-    toolbar: {
-      container: [
-        [{ header: [2, 3, 4, false] }],
-        ["bold", "italic", "underline", "strike", "blockquote"],
-        [{ color: [] }, { background: [] }],
-        [{ list: "ordered" }, { list: "bullet" }],
-        ["link", "image"],
-        ["clean"],
-      ],
-      handlers: {
-        image: async function () {
-          const fileInput = document.createElement("input")
-          fileInput.setAttribute("type", "file");
-          fileInput.setAttribute("accept", "image/*");
-          fileInput.click();
-
-          fileInput.onchange = () => {
-            const file = fileInput.files?.item(0);
-            if (!file) return;
-
-            const editor = quillRef.current?.getEditor();
-            void uploadAndInsertImages([file], editor?.getSelection()?.index);
-          };
-        }
-      },
-    },
-    imageResize: {
-      modules: ["Resize", "DisplaySize"],
-    },
-  }), [uploadAndInsertImages]);
-
   return (
     <div
-      className={`${className} w-full`}
+      className={`${className ?? ""} w-full`}
       onPasteCapture={handlePasteCapture}
       onDragOverCapture={handleDragOverCapture}
       onDropCapture={handleDropCapture}
     >
       {label && <label htmlFor={label} className="label">{label}</label>}
-      <QuillErrorBoundary value={value} onChange={onChange}>
-        <ReactQuill
-          ref={handleQuillRef}
-          theme="snow"
-          modules={modules}
-          className={`w-full text-lg rounded-lg outline-none transition-all duration-200
-              ${isFocus ? "ring-opacity-30 ring-yellow-900 ring-2" : "ring-gray-200 ring-1"}`}
-          value={value}
-          onChange={onChange}
-          onFocus={() => setIsFocus(true)}
-          onBlur={() => setIsFocus(false)}
-        />
-      </QuillErrorBoundary>
+      {
+        hasEditorError
+          ? <EditorFallback value={value} onChange={onChange} />
+          : <div
+              ref={editorContainerRef}
+              className={`min-h-52 w-full text-lg rounded-lg outline-none transition-all duration-200
+                ${isFocus ? "ring-opacity-30 ring-yellow-900 ring-2" : "ring-gray-200 ring-1"}`}
+            />
+      }
     </div>
   );
+}
+
+function valueToHtml(value?: QuillValue) {
+  return typeof value === "string" ? value : "";
 }
 
 function getImageFilesFromDataTransfer(data?: DataTransfer | null) {
@@ -177,8 +236,8 @@ function getImageFilesFromList(fileList?: FileList | null) {
 }
 
 type FallbackProps = {
-  value?: ReactQuillType.Value;
-  onChange?(value: string, delta: DeltaStatic, source: Sources, editor: ReactQuillType.UnprivilegedEditor): void;
+  value?: QuillValue;
+  onChange?(value: string, delta: DeltaStatic, source: Sources, editor: QuillType): void;
 };
 
 function EditorFallback({ value = "", onChange }: FallbackProps) {
@@ -190,35 +249,8 @@ function EditorFallback({ value = "", onChange }: FallbackProps) {
         event.target.value,
         {} as DeltaStatic,
         "user",
-        {} as ReactQuillType.UnprivilegedEditor,
+        {} as QuillType,
       )}
     />
   );
-}
-
-type ErrorBoundaryProps = FallbackProps & {
-  children: ReactNode;
-};
-
-class QuillErrorBoundary extends Component<ErrorBoundaryProps, { hasError: boolean }> {
-  constructor(props: ErrorBoundaryProps) {
-    super(props);
-    this.state = { hasError: false };
-  }
-
-  static getDerivedStateFromError() {
-    return { hasError: true };
-  }
-
-  componentDidCatch(error: unknown) {
-    console.error("Quill editor failed to render:", error);
-  }
-
-  render() {
-    if (this.state.hasError) {
-      return <EditorFallback value={this.props.value} onChange={this.props.onChange} />;
-    }
-
-    return this.props.children;
-  }
 }
