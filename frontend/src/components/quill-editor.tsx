@@ -25,7 +25,9 @@ export default function QuillEditor({
 }: Props) {
   const editorContainerRef = useRef<HTMLDivElement | null>(null);
   const quillRef = useRef<QuillType | null>(null);
+  const isInitializingRef = useRef(false);
   const onChangeRef = useRef(onChange);
+  const valueRef = useRef(value);
   const lastHtmlRef = useRef<string>("");
 
   const [isFocus, setIsFocus] = useState<boolean>(false);
@@ -34,6 +36,10 @@ export default function QuillEditor({
   useEffect(() => {
     onChangeRef.current = onChange;
   }, [onChange]);
+
+  useEffect(() => {
+    valueRef.current = value;
+  }, [value]);
 
   const uploadAndInsertImages = useCallback(async (files: File[], index?: number) => {
     const editor = quillRef.current;
@@ -89,9 +95,10 @@ export default function QuillEditor({
   }), [uploadAndInsertImages]);
 
   useEffect(() => {
-    if (!editorContainerRef.current || quillRef.current) return;
+    if (!editorContainerRef.current || quillRef.current || isInitializingRef.current) return;
 
     let isDisposed = false;
+    isInitializingRef.current = true;
 
     async function initializeEditor() {
       try {
@@ -115,9 +122,10 @@ export default function QuillEditor({
         });
 
         quillRef.current = editor;
+        isInitializingRef.current = false;
         setHasEditorError(false);
 
-        const initialHtml = valueToHtml(value);
+        const initialHtml = valueToHtml(valueRef.current);
         if (initialHtml) {
           editor.clipboard.dangerouslyPasteHTML(initialHtml, "silent");
         }
@@ -134,6 +142,7 @@ export default function QuillEditor({
         });
       } catch (err) {
         console.error("Quill editor failed to initialize:", err);
+        isInitializingRef.current = false;
         setHasEditorError(true);
       }
     }
@@ -142,9 +151,10 @@ export default function QuillEditor({
 
     return () => {
       isDisposed = true;
+      isInitializingRef.current = false;
       quillRef.current = null;
     };
-  }, [modules, value]);
+  }, [modules]);
 
   useEffect(() => {
     const editor = quillRef.current;
