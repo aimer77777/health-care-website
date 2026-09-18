@@ -73,6 +73,31 @@ export default function QuillEditor({
         ["clean"],
       ],
       handlers: {
+        link: function () {
+          const editor = quillRef.current;
+          if (!editor) return;
+
+          const range = editor.getSelection(true);
+          if (!range) return;
+
+          const currentLink = editor.getFormat(range).link;
+          const input = window.prompt("請輸入連結網址", typeof currentLink === "string" ? currentLink : "https://");
+          if (input === null) return;
+
+          const url = normalizeLinkUrl(input);
+          if (!url) {
+            editor.format("link", false, "user");
+            return;
+          }
+
+          if (range.length === 0) {
+            editor.insertText(range.index, url, "link", url, "user");
+            editor.setSelection(range.index + url.length, 0, "silent");
+            return;
+          }
+
+          editor.format("link", url, "user");
+        },
         image: function () {
           const fileInput = document.createElement("input");
           fileInput.setAttribute("type", "file");
@@ -223,6 +248,16 @@ export default function QuillEditor({
 
 function valueToHtml(value?: QuillValue) {
   return typeof value === "string" ? value : "";
+}
+
+function normalizeLinkUrl(value: string) {
+  const url = value.trim();
+  if (!url || /^javascript:/i.test(url)) return "";
+  if (/^(https?:|mailto:|tel:)/i.test(url) || url.startsWith("/") || url.startsWith("#")) {
+    return url;
+  }
+
+  return `https://${url}`;
 }
 
 function getImageFilesFromDataTransfer(data?: DataTransfer | null) {
