@@ -16,9 +16,10 @@ import NumberValidationUsecase from "@/module/validation/application/numberValid
 import { useRouter } from "@/navigation";
 import { faSave, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { Dialog } from "@radix-ui/themes";
 import { formatDate } from "date-fns";
 import { useTranslations } from "next-intl";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 type Props = {
   updateId?: number;
@@ -86,9 +87,17 @@ export default function InsuranceEditor({
   const [isValidationPassed, setIsValidationPassed] = useState<boolean[]>([]);
   const [saveError, setSaveError] = useState<string>("");
   const [hasPersonalDataConsent, setHasPersonalDataConsent] = useState<boolean>(false);
+  const [pendingRequest, setPendingRequest] = useState<InsuranceRequest | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isValidating, setIsValidating] = useState(false);
+  const validationInProgress = useRef(false);
+  const submissionInProgress = useRef(false);
+  const saveButtonContainer = useRef<HTMLSpanElement>(null);
+  const confirmationTitle = useRef<HTMLHeadingElement>(null);
 
   const usecase = new InsuranceUsecase(new InsuranceRepoImpl());
   const personalDataConsent = personalDataConsentContent(locale);
+  const isEn = locale === "en";
 
   function handleValidate(result: boolean) {
     setToValidate(false);
@@ -96,27 +105,30 @@ export default function InsuranceEditor({
   }
 
   function handleDelete() {
-    if (updateId === undefined) return;
+    if (updateId === undefined || submissionInProgress.current) return;
 
     usecase.deleteInsurance(updateId)
       .then(() => router.push("/admin/insurance"));
   }
 
   function handleSave() {
+    if (submissionInProgress.current || validationInProgress.current || pendingRequest) return;
     setSaveError("");
-    if (!hasPersonalDataConsent) {
-      setSaveError(personalDataConsent.requiredMessage);
-      return;
-    }
+    setHasPersonalDataConsent(false);
+    validationInProgress.current = true;
+    setIsValidating(true);
     setIsValidationPassed([]);
     setToValidate(true);
   }
 
   useEffect(() => {
-    if (isValidationPassed.length < 13 ||
-      isValidationPassed.some((result) => !result)) return;
+    // Wait for all 13 existing field validators before opening confirmation.
+    if (!validationInProgress.current || isValidationPassed.length < 13) return;
+    validationInProgress.current = false;
+    setIsValidating(false);
+    if (isValidationPassed.some((result) => !result)) return;
 
-    const request = new InsuranceRequest({
+    setPendingRequest(new InsuranceRequest({
       applicationDate: applicationDate!,
       incidentDate: incidentDate!,
       name,
@@ -139,25 +151,69 @@ export default function InsuranceEditor({
       claimDate,
       insuranceCompanyStamp,
       insuranceCompanyTime,
-    });
-
-    (updateId === undefined
-      ? usecase.createInsurance(request)
-      : usecase.updateInsurance(updateId, request)
-    ).then(
-      () => router.push("/admin/insurance")
-    ).catch(
-      (err) => {
-        console.error(`${updateId === undefined ? "Creating" : "Updating"} insurance failed:`, err);
-        setSaveError(err?.response?.data?.message ?? err?.message ?? trans("save"));
-      }
-    );
+    }));
   }, [isValidationPassed]);
+
+  function handleConfirmationClose(open: boolean) {
+    if (open) return;
+    setPendingRequest(null);
+    setHasPersonalDataConsent(false);
+  }
+
+  async function handleConfirmSave() {
+    if (!pendingRequest || !hasPersonalDataConsent || submissionInProgress.current) return;
+    // The ref also blocks clicks in the same render, before disabled updates.
+    submissionInProgress.current = true;
+    setIsSubmitting(true);
+    setSaveError("");
+    try {
+      if (updateId === undefined) {
+        await usecase.createInsurance(pendingRequest);
+      } else {
+        await usecase.updateInsurance(updateId, pendingRequest);
+      }
+      // Stay locked until navigation completes, even after a fast API response.
+      router.push("/admin/insurance");
+    } catch (err: any) {
+      console.error(`${updateId === undefined ? "Creating" : "Updating"} insurance failed:`, err);
+      setSaveError(err?.response?.data?.message ?? err?.message ?? trans("save"));
+      submissionInProgress.current = false;
+      setIsSubmitting(false);
+    }
+  }
+
+  const confirmationRows = pendingRequest ? [
+    [trans("application_date"), formatDate(pendingRequest.applicationDate, "yyyy-MM-dd")],
+    [trans("incident_date"), formatDate(pendingRequest.incidentDate, "yyyy-MM-dd")],
+    [trans("name"), pendingRequest.name],
+    [trans("student_id"), pendingRequest.studentId],
+    [trans("id_number"), pendingRequest.idNumber],
+    [trans("address"), pendingRequest.address],
+    [trans("phone_number"), pendingRequest.phoneNumber],
+    [trans("email"), pendingRequest.email],
+    [trans("claim_detail"), trans(pendingRequest.claimDetails)],
+    [trans("payment_type"), trans(pendingRequest.paymentType)],
+    [trans("location"), trans(pendingRequest.location)],
+    [trans("incident_cause"), pendingRequest.incidentCause],
+    [trans("receipt"), pendingRequest.receipt],
+    [trans("certificate"), pendingRequest.diagnosisCertificate],
+    [trans("bankbook"), String(pendingRequest.bankbook)],
+    [trans("x_ray"), String(pendingRequest.xRay)],
+    [trans("application_amount"), String(pendingRequest.applicationAmount)],
+    [trans("claim_amount"), pendingRequest.claimAmount?.toString() ?? "—"],
+    [trans("claim_date"), pendingRequest.claimDate ? formatDate(pendingRequest.claimDate, "yyyy-MM-dd") : "—"],
+    [trans("remarks"), pendingRequest.remarks || "—"],
+    [trans("insurance_company_stamp"), pendingRequest.insuranceCompanyStamp ? (isEn ? "Yes" : "是") : (isEn ? "No" : "否")],
+    [trans("insurance_company_time"), pendingRequest.insuranceCompanyStamp && pendingRequest.insuranceCompanyTime ? formatDate(pendingRequest.insuranceCompanyTime, "yyyy-MM-dd") : "—"],
+  ] : [];
 
   return (
     <>
       <h1>{updateId === undefined ? trans("new") : trans("edit")}</h1>
-      <form className="mt-6 flex flex-col gap-4">
+      <form className="mt-6 flex flex-col gap-4" onSubmit={(event) => {
+        event.preventDefault();
+        handleSave();
+      }}>
         <DateField
           label="application_date"
           labelText={trans("application_date")}
@@ -330,34 +386,6 @@ export default function InsuranceEditor({
           value={remarks}
           onChange={setRemarks}
         />
-        <section className="rounded-lg border border-gray-200 p-4">
-          <h2 className="text-xl font-semibold">{personalDataConsent.title}</h2>
-          <div className="mt-3 max-h-72 overflow-y-auto rounded-md border border-gray-200 bg-gray-50 p-3 text-sm leading-7">
-            {personalDataConsent.sections.map((section, index) => (
-              <div key={index} className={index === 0 ? "" : "mt-4"}>
-                {section.heading && <h3 className="font-semibold">{section.heading}</h3>}
-                {section.paragraphs.map((paragraph, paragraphIndex) => (
-                  <p key={paragraphIndex} className="mt-1">{paragraph}</p>
-                ))}
-              </div>
-            ))}
-          </div>
-          <label htmlFor="personal_data_consent" className="mt-3 flex flex-row gap-2 items-start">
-            <input
-              id="personal_data_consent"
-              type="checkbox"
-              className="mt-1 size-4 shrink-0"
-              checked={hasPersonalDataConsent}
-              onChange={(event) => {
-                setHasPersonalDataConsent(event.target.checked);
-                if (event.target.checked && saveError === personalDataConsent.requiredMessage) {
-                  setSaveError("");
-                }
-              }}
-            />
-            <span>{personalDataConsent.checkboxLabel}</span>
-          </label>
-        </section>
         <div>
           <label htmlFor="insurance_company_stamp" className="label">{trans("insurance_company_stamp")}</label>
           <div className="flex flex-row gap-2 items-center">
@@ -383,21 +411,95 @@ export default function InsuranceEditor({
             )}
           </div>
         </div>
-        {saveError && <p className="text-red-500 text-sm font-medium">{saveError}</p>}
+        {saveError && !pendingRequest && <p role="alert" className="text-red-500 text-sm font-medium">{saveError}</p>}
         <div className="flex flex-row justify-end gap-2">
           {
             updateId !== undefined &&
-            <Button className="border" onClick={handleDelete}>
+            <Button className="border" onClick={handleDelete} disabled={isSubmitting || isValidating}>
               <FontAwesomeIcon icon={faTrash} className="me-2 size-4" />
               <span className="py-1">{trans("delete")}</span>
             </Button>
           }
-          <Button className="border" onClick={handleSave}>
-            <FontAwesomeIcon icon={faSave} className="me-2 size-4" />
-            <span className="py-1">{trans("save")}</span>
-          </Button>
+          <span ref={saveButtonContainer}>
+            <Button className="border" onClick={handleSave} disabled={isSubmitting || isValidating}>
+              <FontAwesomeIcon icon={faSave} className="me-2 size-4" />
+              <span className="py-1">{trans("save")}</span>
+            </Button>
+          </span>
         </div>
       </form>
+      <Dialog.Root open={pendingRequest !== null} onOpenChange={handleConfirmationClose}>
+        <Dialog.Content
+          maxWidth="800px"
+          style={{ maxHeight: "85dvh", overflowY: "auto" }}
+          onOpenAutoFocus={(event) => {
+            event.preventDefault();
+            confirmationTitle.current?.focus();
+          }}
+          onCloseAutoFocus={(event) => {
+            event.preventDefault();
+            const saveButton = saveButtonContainer.current?.querySelector("button");
+            if (saveButton?.disabled) {
+              saveButton.closest("form")?.querySelector("input")?.focus();
+            } else {
+              saveButton?.focus();
+            }
+          }}
+        >
+          <Dialog.Title ref={confirmationTitle} tabIndex={-1}>
+            {isEn ? "Student Insurance Details and Personal Data Statement" : "學生保險資料確認及個資聲明"}
+          </Dialog.Title>
+          <Dialog.Description className="mb-4">
+            {isEn ? "Review the details and full statement, then check the acknowledgement before submitting." : "請確認填寫資料並閱讀完整個資聲明，勾選同意後再確認送出。"}
+          </Dialog.Description>
+          <section aria-label={isEn ? "Insurance details" : "保險資料確認"}>
+            <dl className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              {confirmationRows.map(([label, value]) => (
+                <div key={label} className="min-w-0">
+                  <dt className="font-semibold">{label}</dt>
+                  <dd className="whitespace-pre-wrap break-words">{value}</dd>
+                </div>
+              ))}
+            </dl>
+          </section>
+          <section className="mt-4 rounded-lg border border-gray-200 p-4" aria-labelledby="insurance-consent-title">
+            <h2 id="insurance-consent-title" className="text-xl font-semibold">{personalDataConsent.title}</h2>
+            <div className="mt-3 rounded-md border border-gray-200 bg-gray-50 p-3 text-sm leading-7">
+              {personalDataConsent.sections.map((section, index) => (
+                <div key={index} className={index === 0 ? "" : "mt-4"}>
+                  {section.heading && <h3 className="font-semibold">{section.heading}</h3>}
+                  {section.paragraphs.map((paragraph, paragraphIndex) => (
+                    <p key={paragraphIndex} className="mt-1">{paragraph}</p>
+                  ))}
+                </div>
+              ))}
+            </div>
+            <label htmlFor="personal_data_consent" className="mt-3 flex flex-row gap-2 items-start">
+              <input
+                id="personal_data_consent"
+                type="checkbox"
+                className="mt-1 size-4 shrink-0"
+                checked={hasPersonalDataConsent}
+                disabled={isSubmitting}
+                onChange={(event) => setHasPersonalDataConsent(event.target.checked)}
+              />
+              <span>{isEn ? "I have read and understood the above information" : "我已閱讀並了解上述事項"}</span>
+            </label>
+          </section>
+          {saveError && <p role="alert" className="mt-3 text-red-500 text-sm font-medium">{saveError}</p>}
+          <p role="status" className="mt-3" aria-live="polite">
+            {isSubmitting ? (isEn ? "Submitting…" : "資料送出中…") : ""}
+          </p>
+          <div className="mt-4 flex flex-wrap justify-end gap-2">
+            <Button className="border" onClick={() => handleConfirmationClose(false)}>
+              {isEn ? "Return to edit" : "返回修改"}
+            </Button>
+            <Button className="border" onClick={handleConfirmSave} disabled={!hasPersonalDataConsent || isSubmitting}>
+              {isEn ? "Confirm and submit" : "確認送出"}
+            </Button>
+          </div>
+        </Dialog.Content>
+      </Dialog.Root>
     </>
   );
 }
