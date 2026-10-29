@@ -1,4 +1,4 @@
-FROM node:20-alpine3.20 AS dependencies
+FROM node:22.23.4-alpine AS dependencies
 
 WORKDIR /package
 COPY ./package.json ./yarn.lock ./

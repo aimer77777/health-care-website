@@ -34,7 +34,7 @@ export default async function CarouselPage(props: Props) {
         <HeadInfo datetime={viewModel.releasedDate} />
       </div>
       <hr className="my-3" />
-      <div className="w-full max-w-[960px]">
+      <div className="w-full max-w-[60rem]">
         <Link href={viewModel.imageUrl} target="_blank">
           <Image
             src={viewModel.imageUrl}

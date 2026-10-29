@@ -41,3 +41,13 @@ blockquote::before {
 .container {
   @apply mx-auto px-4 max-w-7xl;
 }
+
+/* Limit prose line length without narrowing navigation, images or tables. */
+.readable-content :where(p, blockquote) {
+  max-width: 40em;
+  overflow-wrap: anywhere;
+}
+
+.readable-content :where(p, blockquote):lang(en) {
+  max-width: 80ch;
+}

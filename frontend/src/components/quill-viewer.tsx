@@ -22,6 +22,6 @@ export default function QuillViewer({
   imageAlt?: string;
 }) {
   return (
-    <section className="mt-6 ql-editor !p-0" dangerouslySetInnerHTML={{ __html: normalizeHtml(value, imageAlt) }}></section>
+    <section className="mt-6 ql-editor readable-content !p-0" dangerouslySetInnerHTML={{ __html: normalizeHtml(value, imageAlt) }}></section>
   );
 }

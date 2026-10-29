@@ -3,6 +3,7 @@ import "./globals.css";
 import "@radix-ui/themes/styles.css";
 import { Theme } from "@radix-ui/themes";
 import { Noto_Sans_TC } from 'next/font/google';
+import { getLocale } from "next-intl/server";
 
 const fontSans = Noto_Sans_TC({
   subsets: ['latin'],
@@ -17,13 +18,16 @@ export const metadata: Metadata = {
   description: "健康檢查、緊急醫療、健康服務、健康職場、教育訓練、餐飲衛生、下載專區",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const locale = await getLocale();
+  const lang = locale === "en" ? "en" : "zh-Hant-TW";
+
   return (
-    <html lang="zh-Hant-TW">
+    <html lang={lang}>
       <body className={fontSans.className}>
         <Theme>
           {children}

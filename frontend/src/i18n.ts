@@ -4,8 +4,9 @@ import { notFound } from "next/navigation";
 export const locales = ["en", "zh"];
 
 export default getRequestConfig(async ({ requestLocale }) => {
-    const locale = await requestLocale;
-    if (!locale || !locales.includes(locale)) notFound();
+    // Non-localized error pages have no request locale.
+    const locale = (await requestLocale) || "zh";
+    if (!locales.includes(locale)) notFound();
 
     return {
         locale,

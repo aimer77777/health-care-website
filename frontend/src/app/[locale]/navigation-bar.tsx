@@ -7,7 +7,7 @@ import { faBars, faGlobe, faGraduationCap, faHouse, faMosquito, faScrewdriverWre
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome"
 import { useEffect, useState } from "react"
 import Drawer from "./drawer";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { Link, usePathname } from "@/navigation";
 import DropdownMenu from "@/components/dropdown-menu";
 import { useSearchParams } from "next/navigation";
@@ -19,6 +19,7 @@ const userUsecase = new UserUsecase(new UserRepoImpl());
 
 export default function NavigationBar() {
   const homeTrans = useTranslations("Home");
+  const pageLocale = useLocale();
 
   const pathname = usePathname();
   const query = useSearchParams().toString();
@@ -94,6 +95,7 @@ export default function NavigationBar() {
               [["zh", "中文"], ["en", "English"]].map(([locale, label]) => (
                 <Link
                   key={locale} href={{ pathname, query }} locale={locale}
+                  lang={locale !== pageLocale ? (locale === "en" ? "en" : "zh-Hant-TW") : undefined}
                   className="hover:bg-black hover:bg-opacity-5 px-2 py-1 rounded-md"
                 >
                   {label}

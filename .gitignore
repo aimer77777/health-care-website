@@ -13,3 +13,6 @@ backend/.static/
 backend/instance/
 **/__pycache__/
 *.py[cod]
+
+# Isolated local runtime used for verification
+.tools/

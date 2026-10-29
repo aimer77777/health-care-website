@@ -1,11 +1,8 @@
 import Link from "next/link";
+import { getLocale } from "next-intl/server";
 
-type Props = {
-  params?: { locale?: string };
-};
-
-export default function LocalizedNotFound({ params }: Props) {
-  const isEnglish = params?.locale === "en";
+export default async function LocalizedNotFound() {
+  const isEnglish = (await getLocale()) === "en";
 
   return (
     <main className="min-h-[80vh] flex flex-col justify-center items-center text-center gap-4">

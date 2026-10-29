@@ -905,7 +905,7 @@
 }
 .ql-snow .ql-tooltip a.ql-preview {
   display: inline-block;
-  max-width: 200px;
+  max-width: 12.5rem;
   overflow-x: hidden;
   text-overflow: ellipsis;
   vertical-align: top;
