@@ -9,17 +9,31 @@ import RestaurantRepoImpl from "@/module/restaurant/presenter/restaurantRepoImpl
 import RestaurantViewModel from "@/module/restaurant/presenter/restaurantViewModel";
 import { getTranslations } from "next-intl/server";
 import { notFound } from "next/navigation";
+import type { Metadata } from "next";
+import { cache } from "react";
 
 type Props = {
   params: Promise<{ locale: string, id: string }>;
 };
+
+const getRestaurant = cache((id: number) => new RestaurantUsecase(new RestaurantRepoImpl()).getRestaurantById(id));
+
+export async function generateMetadata(props: Props): Promise<Metadata> {
+  const { id, locale } = await props.params;
+  if (!/^\d+$/.test(id)) return {};
+  try {
+    const entity = await getRestaurant(Number(id));
+    return { title: locale === "en" ? entity.titleEn : entity.title };
+  } catch {
+    return {};
+  }
+}
 
 export default async function RestaurantPage(props: Props) {
   const params = await props.params;
   const trans = await getTranslations("Restaurant");
   const statusTrans = await getTranslations("Status");
 
-  const restaurantUsecase = new RestaurantUsecase(new RestaurantRepoImpl());
   const attachmentUsecase = new AttachmentUsecase(new AttachmentRepoImpl());
 
   if (!/^\d+$/.test(params.id)) notFound();
@@ -27,7 +41,7 @@ export default async function RestaurantPage(props: Props) {
 
   var entity: RestaurantEntity;
   try {
-    entity = await restaurantUsecase.getRestaurantById(idNum);
+    entity = await getRestaurant(idNum);
   } catch {
     notFound();
   }

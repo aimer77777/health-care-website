@@ -46,8 +46,11 @@ export default function PostTable({
   const [pagerEntity, setPagerEntity] = useState(new PagerEntity({ currentPage: 1, totalPage: 1 }));
   const [columnSelected, setColumnSelected] =
     useState<ColumnSelectionType>(columnSelections[0]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [statusMessage, setStatusMessage] = useState("");
 
   useEffect(() => {
+    setIsLoading(true);
     postUsecase.getAllPosts({
       page: pagerEntity.currentPage,
       column: columnSelected.value,
@@ -57,9 +60,11 @@ export default function PostTable({
       .then(([posts, pager]) => {
         setPosts(posts);
         setPagerEntity(prev => new PagerEntity({ currentPage: prev.currentPage, totalPage: pager.totalPage }))
+        setStatusMessage(trans("results_updated", { count: posts.length }));
       })
-      .catch(err => console.error("Fetching posts failed:", err));
-  }, [columnSelected, searchText, pagerEntity.currentPage]);
+      .catch(err => console.error("Fetching posts failed:", err))
+      .finally(() => setIsLoading(false));
+  }, [columnSelected, searchText, pagerEntity.currentPage, isAdmin, trans]);
 
   function handleColumnSelectionChange(index: number) {
     setColumnSelected(columnSelections[index]);
@@ -72,6 +77,7 @@ export default function PostTable({
 
   return (
     <div>
+      <p className="sr-only" role="status" aria-live="polite" aria-atomic="true">{statusMessage}</p>
       {
         isEnableSearch &&
         <SearchBar className="max-md:hidden mt-6" onSubmit={handleSearchSubmit} />
@@ -89,14 +95,25 @@ export default function PostTable({
       </div>
       <div className="mt-4 border shadow-md rounded-xl overflow-hidden">
         <GroupedButton
+          id="post-category-tabs"
+          panelId="post-results-panel"
+          ariaLabel={trans("category_tabs")}
           className="w-full rounded-t-md overflow-hidden max-md:hidden border-b-2"
           textClassName="font-bold"
           options={columnSelections.map((e) => (trans(e.label)))}
           onChange={handleColumnSelectionChange}
         />
-        <Card className="w-full rounded-b-xl overflow-hidden" isRounded={false} isBorder={false}>
-          <Table></Table>
-        </Card>
+        <div
+          id="post-results-panel"
+          role="tabpanel"
+          aria-labelledby={`post-category-tabs-tab-${columnSelections.findIndex((option) => option.value === columnSelected.value)}`}
+          aria-busy={isLoading}
+          tabIndex={0}
+        >
+          <Card className="w-full rounded-b-xl overflow-hidden" isRounded={false} isBorder={false}>
+            <Table />
+          </Card>
+        </div>
       </div>
       <div className="flex flex-row justify-between items-start md:items-center mt-4">
         <div>{actions ?? (<></>)}</div>

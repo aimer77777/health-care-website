@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 
 type Props = {
+  id?: string;
   className?: string;
   children: Readonly<React.ReactNode>;
   isOpen?: boolean;
@@ -10,6 +11,7 @@ type Props = {
 }
 
 export default function DropdownMenu({
+  id,
   className,
   children,
   isOpen = true,
@@ -56,27 +58,35 @@ export default function DropdownMenu({
       }
     };
 
+    const keyHandler = (event: KeyboardEvent) => {
+      if (event.key === "Escape") onCancel?.();
+    };
+
     if (isOpen) {
       document.addEventListener("click", clickHandler);
+      document.addEventListener("keydown", keyHandler);
       document.addEventListener("resize", adjustDropdownDirection);
       document.addEventListener("scroll", adjustDropdownDirection);
     }
 
     return () => {
       document.removeEventListener("click", clickHandler);
+      document.removeEventListener("keydown", keyHandler);
       document.removeEventListener("resize", adjustDropdownDirection);
       document.removeEventListener("scroll", adjustDropdownDirection);
     };
-  }, [isOpen]);
+  }, [isOpen, onCancel, rnd]);
 
   return (
     <div id={`dropdown-menu-${rnd}`} className={className}>
       <div id={`dropdown-menu-inner-${rnd}`}
+        hidden={!isOpen}
+        aria-hidden={!isOpen}
         className={`z-10 absolute transform transition-all duration-200 ease-in-out
         ${isOpen ? "translate-y-0 opacity-100 pointer-events-auto" : "-translate-y-2 opacity-0 pointer-events-none"}`}
       >
         <div className="bg-white">
-          <div className="flex flex-col my-2 p-1 rounded-lg bg-yellow-700 bg-opacity-5 border border-gray-200 shadow-lg">
+          <div id={id} className="flex flex-col my-2 p-1 rounded-lg bg-yellow-700 bg-opacity-5 border border-gray-200 shadow-lg">
             {children}
           </div>
         </div>

@@ -8,6 +8,7 @@ export default class DownloadEntity {
     visibility: boolean;
     createdTime: Date;
     updatedTime: Date;
+    fileExtension: string;
 
     constructor({
         id,
@@ -17,6 +18,7 @@ export default class DownloadEntity {
         visibility,
         createdTime,
         updatedTime,
+        fileExtension,
     }: DownloadEntity) {
         this.id = id;
         this.title = title;
@@ -25,5 +27,6 @@ export default class DownloadEntity {
         this.visibility = visibility;
         this.createdTime = createdTime;
         this.updatedTime = updatedTime;
+        this.fileExtension = fileExtension;
     }
 }

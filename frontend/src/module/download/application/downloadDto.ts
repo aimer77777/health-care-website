@@ -21,6 +21,7 @@ export class DownloadRequest extends DownloadEntity {
             visibility: visibility,
             createdTime: new Date(),
             updatedTime: new Date(),
+            fileExtension: "",
         });
     }
 
@@ -44,6 +45,7 @@ export class DownloadResponse extends DownloadEntity {
             visibility: json.visibility,
             createdTime: new Date(json.created_time),
             updatedTime: new Date(json.updated_time),
+            fileExtension: json.file_extension ?? "",
         });
     }
 }

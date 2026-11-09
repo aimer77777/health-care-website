@@ -2,8 +2,7 @@
 
 import { faAngleDown } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { useState } from "react";
-import ListTile from "./list-tile";
+import { useId, useState } from "react";
 
 type Props = {
   className?: string;
@@ -14,6 +13,7 @@ type Props = {
 
 export default function ExpensionTile({ className, titleClassName, children, title }: Props) {
   const [isOpen, setIsOpen] = useState<boolean>(false);
+  const panelId = `expansion-${useId().replace(/:/g, "")}`;
 
   const toggleIsOpen = () => {
     setIsOpen((value) => (!value));
@@ -22,15 +22,21 @@ export default function ExpensionTile({ className, titleClassName, children, tit
   return (
     <div className={className}>
       <div className="flex flex-col items-start h-fit w-full">
-        <ListTile className={titleClassName} onClick={toggleIsOpen}>
-          <div className="flex flex-row justify-between items-center w-full">
-            <h4>{title}</h4>
+        <h3 className="w-full">
+          <button
+            type="button"
+            className={`${titleClassName ?? ""} flex w-full items-center justify-between text-left`}
+            aria-expanded={isOpen}
+            aria-controls={panelId}
+            onClick={toggleIsOpen}
+          >
+            <span>{title}</span>
             <div className="h-4 w-4 overflow-clip">
-              <FontAwesomeIcon icon={faAngleDown} className={`transform ${isOpen ? "rotate-180" : "rotate-0"} transition-transform ease-in-out`} />
+              <FontAwesomeIcon aria-hidden="true" icon={faAngleDown} className={`transform ${isOpen ? "rotate-180" : "rotate-0"} transition-transform ease-in-out`} />
             </div>
-          </div>
-        </ListTile>
-        <div className={`overflow-hidden ${isOpen ? "max-h-screen" : "max-h-0"} transition-all duration-300 ease-in-out w-full`}>
+          </button>
+        </h3>
+        <div id={panelId} hidden={!isOpen} className="w-full overflow-hidden">
           <div className={`flex flex-col items-start transform ${isOpen ? "translate-y-0 opacity-100 pointer-events-auto" : "-translate-y-2 opacity-0 pointer-events-none"} transition-all duration-300 ease-in-out w-full`}>
             {children}
           </div>

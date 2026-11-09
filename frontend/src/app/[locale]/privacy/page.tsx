@@ -1,7 +1,16 @@
-import { useTranslations } from "next-intl";
+import { getTranslations } from "next-intl/server";
+import type { Metadata } from "next";
 
-export default function PrivacyPage() {
-  const trans = useTranslations("Privacy");
+type Props = { params: Promise<{ locale: string }> };
+
+export async function generateMetadata(props: Props): Promise<Metadata> {
+  const { locale } = await props.params;
+  const trans = await getTranslations({ locale, namespace: "Privacy" });
+  return { title: trans("title") };
+}
+
+export default async function PrivacyPage() {
+  const trans = await getTranslations("Privacy");
 
   return (
     <>

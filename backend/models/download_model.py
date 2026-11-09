@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from models.database import SchemaMixin, db
 
 
@@ -13,3 +15,8 @@ class Download(SchemaMixin, db.Model):
 
     def __repr__(self):
         return f'<Carousel {self.filename}>'
+
+    def to_dict(self):
+        data = super().to_dict()
+        data['file_extension'] = Path(self.filepath).suffix.lstrip('.').upper()
+        return data

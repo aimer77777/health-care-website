@@ -28,7 +28,8 @@ export default function Footer() {
   }, []);
 
   return (
-    <div className="bg-amber-400 py-8 px-4">
+    <footer id="footer" className="bg-amber-400 py-8 px-4 text-gray-950">
+      <a href="#footer" accessKey="z" className="accesskey-anchor">::: {trans("accesskey_z")}</a>
       <div className="flex flex-col lg:flex-row lg:mx-auto gap-x-10 gap-y-5 lg:items-center justify-between lg:justify-center">
         <div>
           <p className="flex items-center">
@@ -53,11 +54,12 @@ export default function Footer() {
           </p>
         </div>
         <div>
+          <p><Link href="/sitemap" className="link">{trans("sitemap")}</Link></p>
           <p><Link href="/privacy" className="link">{trans("privacy")}</Link></p>
           <p>{trans("copyright")} © {trans("copyright_content")}</p>
           <p lang={isEnglish ? undefined : "en"}>National Central University - Health Center</p>
         </div>
       </div>
-    </div>
+    </footer>
   )
 }

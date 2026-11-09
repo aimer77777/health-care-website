@@ -5,7 +5,7 @@ import Logo from "@/components/logo";
 import { faFacebook, faInstagram } from "@fortawesome/free-brands-svg-icons"
 import { faBars, faGlobe, faGraduationCap, faHouse, faMosquito, faScrewdriverWrench, faSignOut } from "@fortawesome/free-solid-svg-icons"
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome"
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import Drawer from "./drawer";
 import { useLocale, useTranslations } from "next-intl";
 import { Link, usePathname } from "@/navigation";
@@ -27,10 +27,16 @@ export default function NavigationBar() {
   const [isDrawerOpen, setIsDrawerOpen] = useState<boolean>(false);
   const [isLanguageDropdownOpen, setIsLanguageDropdownOpen] = useState<boolean>(false);
   const [userRole, setUserRole] = useState<UserRoleEnum>(UserRoleEnum.None);
+  const menuButtonRef = useRef<HTMLButtonElement>(null);
 
   function clearUserRole() {
     setUserRole(UserRoleEnum.None);
   }
+
+  const closeDrawer = useCallback(() => {
+    setIsDrawerOpen(false);
+    window.requestAnimationFrame(() => menuButtonRef.current?.focus());
+  }, []);
 
   useEffect(() => {
     userUsecase.getCurrentUser()
@@ -39,55 +45,52 @@ export default function NavigationBar() {
   }, []);
 
   return (
-    <div>
+    <header id="top-navigation">
+      <a href="#top-navigation" accessKey="u" className="accesskey-anchor">::: {homeTrans("accesskey_u")}</a>
       <div className="flex items-center justify-end bg-amber-400 py-1 px-2 gap-2 text-gray-800 max-md:hidden">
         {/* Admin links */}
         {
           userRole <= UserRoleEnum.Normal &&
-          <Link href="/dengue">
-            <Button>
+          <Link href="/dengue" className="flex items-center rounded-full px-3 py-1 hover:bg-black/5">
               <FontAwesomeIcon icon={faMosquito} className="size-5 me-2" />
               {homeTrans("dengue")}
-            </Button>
           </Link>
         }
         {
           userRole <= UserRoleEnum.StudentB &&
-          <Link href="/admin">
-            <Button>
+          <Link href="/admin" className="flex items-center rounded-full px-3 py-1 hover:bg-black/5">
               <FontAwesomeIcon icon={faScrewdriverWrench} className="size-5 me-2" />
               {homeTrans("admin")}
-            </Button>
           </Link>
         }
         {
           userRole <= UserRoleEnum.Normal &&
-          <Link href="/logout" onClick={clearUserRole}>
-            <Button>
+          <Link href="/logout" onClick={clearUserRole} className="flex items-center rounded-full px-3 py-1 hover:bg-black/5">
               <FontAwesomeIcon icon={faSignOut} className="size-5 me-2" />
               {homeTrans("logout")}
-            </Button>
           </Link>
         }
         {/* Social links */}
-        <Link href="/">
-          <Button>
+        <Link href="/" className="flex items-center rounded-full px-3 py-1 hover:bg-black/5">
             <FontAwesomeIcon icon={faHouse} className="size-5 me-2" />
             {homeTrans("homepage")}
-          </Button>
         </Link>
-        <Link href="https://ncu.edu.tw/">
-          <Button>
+        <Link href="https://ncu.edu.tw/" className="flex items-center rounded-full px-3 py-1 hover:bg-black/5">
             <FontAwesomeIcon icon={faGraduationCap} className="size-5 me-2" />
             {homeTrans("ncu_homepage")}
-          </Button>
         </Link>
         <div>
-          <Button onClick={() => setIsLanguageDropdownOpen(true)}>
+          <Button
+            ariaControls="desktop-language-menu"
+            ariaExpanded={isLanguageDropdownOpen}
+            ariaHasPopup="menu"
+            onClick={() => setIsLanguageDropdownOpen((value) => !value)}
+          >
             <FontAwesomeIcon icon={faGlobe} className="size-5 me-2" />
             {homeTrans("language")}
           </Button>
           <DropdownMenu
+            id="desktop-language-menu"
             isOpen={isLanguageDropdownOpen}
             onCancel={() => setIsLanguageDropdownOpen(false)}
           >
@@ -104,24 +107,23 @@ export default function NavigationBar() {
             }
           </DropdownMenu>
         </div>
-        <Link href="https://www.instagram.com/ncu7270" aria-label="Instagram" title="Instagram">
-          <Button ariaLabel="Instagram" title="Instagram">
+        <Link href="https://www.instagram.com/ncu7270" aria-label="Instagram" title="Instagram" className="rounded-full p-2 hover:bg-black/5">
             <FontAwesomeIcon icon={faInstagram} className="size-5 my-0.5" aria-hidden="true" />
-          </Button>
         </Link>
-        <Link href="https://www.facebook.com/profile.php?id=100057326145371" aria-label="Facebook" title="Facebook">
-          <Button ariaLabel="Facebook" title="Facebook">
+        <Link href="https://www.facebook.com/profile.php?id=100057326145371" aria-label="Facebook" title="Facebook" className="rounded-full p-2 hover:bg-black/5">
             <FontAwesomeIcon icon={faFacebook} className="size-5 my-0.5" aria-hidden="true" />
-          </Button>
         </Link>
       </div>
 
       {/* Inner links */}
       <div className="flex flex-row justify-between items-center container mx-auto">
         <button
+          ref={menuButtonRef}
           type="button"
           className="md:hidden"
           aria-label={homeTrans("menu")}
+          aria-controls="drawer"
+          aria-expanded={isDrawerOpen}
           onClick={() => setIsDrawerOpen(true)}
         >
           <FontAwesomeIcon icon={faBars} className="size-5" aria-hidden="true" />
@@ -130,22 +132,25 @@ export default function NavigationBar() {
           <Logo />
         </div>
         <div className="flex flex-row items-center max-md:hidden gap-2">
-          <Link href="/page/work_team" className="text-yellow-900 text-nowrap">
-            <Button>{homeTrans("about_us")}</Button>
+          <Link href="/page/work_team" className="text-amber-950 text-nowrap rounded-full px-3 py-1 hover:bg-black/5">
+            {homeTrans("about_us")}
           </Link>
-          <Link href="/page/campus_aed" className="text-yellow-900 text-nowrap">
-            <Button>{homeTrans("aed")}</Button>
+          <Link href="/page/campus_aed" className="text-amber-950 text-nowrap rounded-full px-3 py-1 hover:bg-black/5">
+            {homeTrans("aed")}
           </Link>
-          <Link href="/page/regulation" className="text-yellow-900 text-nowrap">
-            <Button>{homeTrans("regulation")}</Button>
+          <Link href="/page/regulation" className="text-amber-950 text-nowrap rounded-full px-3 py-1 hover:bg-black/5">
+            {homeTrans("regulation")}
           </Link>
-          <Link href="/page/download_area" className="text-yellow-900 text-nowrap">
-            <Button>{homeTrans("download_area")}</Button>
+          <Link href="/page/download_area" className="text-amber-950 text-nowrap rounded-full px-3 py-1 hover:bg-black/5">
+            {homeTrans("download_area")}
+          </Link>
+          <Link href="/sitemap" className="text-amber-950 text-nowrap rounded-full px-3 py-1 hover:bg-black/5">
+            {homeTrans("sitemap")}
           </Link>
         </div>
       </div>
 
-      <Drawer isOpen={isDrawerOpen} onClose={() => setIsDrawerOpen(false)} />
-    </div>
+      <Drawer isOpen={isDrawerOpen} onClose={closeDrawer} />
+    </header>
   )
 }

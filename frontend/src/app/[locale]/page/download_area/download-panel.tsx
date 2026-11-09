@@ -35,9 +35,12 @@ export default function DownloadPanel({
   const [downloads, setDownloads] = useState<DownloadViewModel[]>([]);
   const [columnSelected, setColumnSelected] = useState<ColumnSelectionType>(downloadColumnSelections[0]);
   const [pagerEntity, setPagerEntity] = useState(new PagerEntity({ currentPage: 1, totalPage: 1 }));
+  const [isLoading, setIsLoading] = useState(true);
+  const [statusMessage, setStatusMessage] = useState("");
 
   async function fetchAll() {
     const usecase = new DownloadUsecase(new DownloadRepoImpl());
+    setIsLoading(true);
     try {
       const [entities, pager] = await usecase.getAllDownload({
         page: pagerEntity.currentPage,
@@ -46,8 +49,11 @@ export default function DownloadPanel({
       });
       setDownloads(entities.map((entity) => new DownloadViewModel(entity)));
       setPagerEntity(prev => new PagerEntity({ currentPage: prev.currentPage, totalPage: pager.totalPage }));
+      setStatusMessage(trans("results_updated", { count: entities.length }));
     } catch (err) {
       console.error(err);
+    } finally {
+      setIsLoading(false);
     }
   }
 
@@ -61,6 +67,7 @@ export default function DownloadPanel({
 
   return (
     <div className={className}>
+      <p className="sr-only" role="status" aria-live="polite" aria-atomic="true">{statusMessage}</p>
       <DropdownButton
         className={"md:hidden mt-3 h-[2.625rem]"}
         options={downloadColumnSelections.map((e) => (trans(e.label)))}
@@ -68,14 +75,25 @@ export default function DownloadPanel({
       />
       <div className="mt-4 border shadow-md rounded-xl overflow-hidden">
         <GroupedButton
+          id="download-category-tabs"
+          panelId="download-results-panel"
+          ariaLabel={trans("category_tabs")}
           className="w-full rounded-t-md overflow-hidden max-md:hidden border-b-2"
           textClassName="font-bold"
           options={downloadColumnSelections.map((e) => (trans(e.label)))}
           onChange={handleColumnSelectionChange}
         />
-        <Card className="w-full rounded-b-xl overflow-hidden" isRounded={false} isBorder={false}>
-          <DownloadTable />
-        </Card>
+        <div
+          id="download-results-panel"
+          role="tabpanel"
+          aria-labelledby={`download-category-tabs-tab-${downloadColumnSelections.findIndex((option) => option.value === columnSelected.value)}`}
+          aria-busy={isLoading}
+          tabIndex={0}
+        >
+          <Card className="w-full rounded-b-xl overflow-hidden" isRounded={false} isBorder={false}>
+            <DownloadTable />
+          </Card>
+        </div>
       </div>
       <div className="flex flex-row justify-between items-start md:items-center mt-4">
         <div>{actions ?? (<></>)}</div>
@@ -113,8 +131,10 @@ export default function DownloadPanel({
                 <tr key={download.id} className="border-t">
                   <td className="px-3 md:px-6 py-3 md:ps-10 ps-5 text-nowrap">{trans(download.column)}</td>
                   <td className="px-3 md:px-6 py-3 max-md:pe-5 text-nowrap">
-                    <Link href={download.downloadUrl} className="link" target="_blank">
+                    <Link href={download.downloadUrl} className="link" target="_blank" title={trans("download_new_window")}>
                       {isEn ? download.titleEn : download.title}
+                      {download.fileExtension && `（${download.fileExtension}）`}
+                      <span className="sr-only">（{trans("download_new_window")}）</span>
                     </Link>
                   </td>
                   <td className={`px-3 md:px-6 py-3 ${isAdmin ? "max-md:pe-5" : "md:pe-10"} max-md:hidden text-nowrap`}>

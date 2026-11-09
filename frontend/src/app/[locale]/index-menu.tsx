@@ -1,6 +1,5 @@
 import { Link } from "@/navigation";
 import { useTranslations } from "next-intl";
-import Button from "@/components/button";
 import Card from "@/components/card";
 import IndexMenuUsecase from "@/module/indexMenu/application/indexMenuUsecase";
 import TopicGroupEntity from "@/module/indexMenu/domain/topicGroupEntity";
@@ -31,13 +30,13 @@ export default function IndexMenu({ className }: Props) {
     return (
       <Card>
         <div className="flex flex-col items-center py-4 px-6 gap-2">
-          <h4>{topicTrans(group.label)}</h4>
+          <h2 className="text-lg">{topicTrans(group.label)}</h2>
           <hr className="w-full" />
           {
             group.topics.map((topic) => (
-              <Button key={topic.label} className="text-yellow-900">
-                <Link href={`/page/${topic.label}`}>{topicTrans(topic.label)}</Link>
-              </Button>
+              <Link key={topic.label} href={`/page/${topic.label}`} className="rounded-full px-3 py-1 text-amber-950 hover:bg-black/5">
+                {topicTrans(topic.label)}
+              </Link>
             ))
           }
         </div>

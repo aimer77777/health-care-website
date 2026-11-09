@@ -50,10 +50,10 @@ export default function RestaurantPanel({
 
   function RestaurantMore() {
     return (
-      <Link href="/restaurant" className="link">
+      <Link href="/restaurant" className="link" aria-label={trans("more_reports")} title={trans("more_reports")}>
         <div className="flex flex-row items-center justify-end mt-4">
           <FontAwesomeIcon icon={faSquareCaretRight} className="size-4 me-2" />
-          {trans("more")}
+          {trans("more_reports")}
         </div>
       </Link>
     );

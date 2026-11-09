@@ -57,10 +57,10 @@ export default function PostPanel({
 
   function PostMore() {
     return (
-      <Link href="/post" className="link">
+      <Link href="/post" className="link" aria-label={trans("more_announcements")} title={trans("more_announcements")}>
         <div className="flex flex-row items-center justify-end mt-4">
           <FontAwesomeIcon icon={faSquareCaretRight} className="size-4 me-2" />
-          {trans("more")}
+          {trans("more_announcements")}
         </div>
       </Link>
     );

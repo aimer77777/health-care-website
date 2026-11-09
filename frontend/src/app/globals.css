@@ -35,7 +35,25 @@ blockquote::before {
 }
 
 .link {
-  @apply text-yellow-900 underline;
+  @apply text-amber-950 underline;
+}
+
+:where(a, button, input, select, textarea, [tabindex]):focus-visible {
+  outline: 3px solid #1d4ed8;
+  outline-offset: 3px;
+  border-radius: 0.25rem;
+}
+
+.skip-link {
+  @apply fixed left-4 top-4 z-50 -translate-y-24 bg-white px-4 py-3 font-bold text-gray-950 shadow-lg;
+}
+
+.skip-link:focus {
+  @apply translate-y-0;
+}
+
+.accesskey-anchor {
+  @apply sr-only focus:not-sr-only focus:fixed focus:left-2 focus:z-50 focus:bg-white focus:p-2 focus:text-gray-950;
 }
 
 .container {

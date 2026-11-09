@@ -3,87 +3,117 @@
 import CarouselUsecase from "@/module/carousel/application/carouselUsecase";
 import CarouselEntity from "@/module/carousel/domain/carouselEntity";
 import CarouselRepoImpl from "@/module/carousel/presenter/carouselRepoImpl";
-import { faAngleLeft, faAngleRight } from "@fortawesome/free-solid-svg-icons";
+import { faAngleLeft, faAngleRight, faPause, faPlay } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { MouseEventHandler, useEffect, useState } from "react";
+import { MouseEventHandler, useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import CarouselViewModel from "@/module/carousel/presenter/carouselViewModel";
 import { Link } from "@/navigation";
+import { useTranslations } from "next-intl";
 
 type Props = {
   className?: string;
   locale: string;
 };
 
-export default function Carousel({
-  className,
-  locale,
-}: Props) {
-  const [currentIndex, setCurrentIndex] = useState<number>(0);
-  const [carousels, setCarousels] = useState<CarouselEntity[]>([]);
+const usecase = new CarouselUsecase(new CarouselRepoImpl());
 
-  const usecase = new CarouselUsecase(new CarouselRepoImpl());
+function plainText(value: string) {
+  return value.replace(/<[^>]+>/g, " ").replace(/&nbsp;/gi, " ").replace(/\s+/g, " ").trim();
+}
+
+export default function Carousel({ className, locale }: Props) {
+  const trans = useTranslations("Carousel");
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [carousels, setCarousels] = useState<CarouselEntity[]>([]);
+  const [isManuallyPaused, setIsManuallyPaused] = useState(false);
+  const [isFocusPaused, setIsFocusPaused] = useState(false);
+  const [resetKey, setResetKey] = useState(0);
+  const isEn = locale === "en";
+  const isPaused = isManuallyPaused || isFocusPaused;
 
   useEffect(() => {
-    usecase.getAllCarousels({ visibility: true})
-      .then((entities) => setCarousels(entities))
+    usecase.getAllCarousels({ visibility: true })
+      .then(setCarousels)
       .catch((err) => console.error("Fetching carousel failed:", err));
   }, []);
 
-  const getNextIndex = (value: number): number => carousels.length === 0 ? 0 : ((value + 1) % carousels.length);
-  const getPreviousIndex = (value: number): number => carousels.length === 0 ? 0 : ((value - 1 + carousels.length) % carousels.length);
+  const labels = useMemo(() => carousels.map((entity, index) => {
+    const title = (isEn ? entity.titleEn : entity.title).trim();
+    const content = plainText(isEn ? entity.contentEn : entity.content);
+    const meaningfulTitle = title && !/^\d+$/.test(title) ? title : content.slice(0, 75);
+    return meaningfulTitle.slice(0, 60) || trans("slide_fallback", { number: index + 1 });
+  }), [carousels, isEn, trans]);
 
-  const goNext = () => setCurrentIndex(getNextIndex);
-  const goPrevious = () => setCurrentIndex(getPreviousIndex);
+  const getNextIndex = (value: number) => carousels.length === 0 ? 0 : (value + 1) % carousels.length;
+  const getPreviousIndex = (value: number) => carousels.length === 0 ? 0 : (value - 1 + carousels.length) % carousels.length;
+  const resetTimer = () => setResetKey((value) => value + 1);
+  const goNext = () => { setCurrentIndex(getNextIndex); resetTimer(); };
+  const goPrevious = () => { setCurrentIndex(getPreviousIndex); resetTimer(); };
 
-  const isEn = locale === "en";
+  useEffect(() => {
+    if (isPaused || carousels.length <= 1) return;
+    const interval = window.setInterval(
+      () => setCurrentIndex((value) => (value + 1) % carousels.length),
+      5000
+    );
+    return () => window.clearInterval(interval);
+  }, [resetKey, carousels.length, isPaused]);
+
+  if (carousels.length === 0) return null;
 
   return (
-    <div className={`${className ?? ""} ${carousels.length === 0 ? "hidden" : ""} relative rounded-xl aspect-video w-full h-auto overflow-hidden`}>
-      {
-        carousels.map((entity, index) => {
+    <section
+      className={`${className ?? ""} relative`}
+      aria-roledescription={trans("region_description")}
+      aria-label={trans("region_label")}
+      onFocusCapture={() => setIsFocusPaused(true)}
+      onBlurCapture={(event) => {
+        if (!event.currentTarget.contains(event.relatedTarget as Node)) setIsFocusPaused(false);
+      }}
+    >
+      <button
+        type="button"
+        className="mb-2 inline-flex items-center gap-2 rounded-md bg-gray-950 px-3 py-2 text-white"
+        aria-pressed={isManuallyPaused}
+        onClick={() => setIsManuallyPaused((value) => !value)}
+      >
+        <FontAwesomeIcon icon={isManuallyPaused ? faPlay : faPause} className="size-4" aria-hidden="true" />
+        {isManuallyPaused ? trans("play") : trans("pause")}
+      </button>
+
+      <div className="relative aspect-video w-full overflow-hidden rounded-xl" aria-live={isPaused ? "polite" : "off"}>
+        {carousels.map((entity, index) => {
           const viewModel = new CarouselViewModel(entity);
+          const isCurrent = index === currentIndex;
           return (
             <Image
-              key={index}
-              alt={isEn ? viewModel.titleEn : viewModel.title}
+              key={entity.id}
+              alt={isCurrent ? trans("image_alt", { title: labels[index] }) : ""}
+              aria-hidden={!isCurrent}
               src={viewModel.imageUrl}
-              fill={true}
-              priority={true}
-              sizes="50vw"
-              className={`object-cover transform transition-all duration-500 ease-in-out overflow-hidden
-              ${index > currentIndex ? "translate-x-full opacity-50" : (index < currentIndex ? "-translate-x-full opacity-50" : "translate-x-0 opacity-100")}`}
+              fill
+              priority={index === 0}
+              sizes="(min-width: 768px) 75vw, 100vw"
+              className={`object-cover transition-all duration-500 ease-in-out ${index > currentIndex ? "translate-x-full opacity-0" : index < currentIndex ? "-translate-x-full opacity-0" : "translate-x-0 opacity-100"}`}
             />
           );
-        })
-      }
-      <CarouselControl />
-    </div>
+        })}
+        <CarouselControl />
+      </div>
+    </section>
   );
 
   function CarouselControl() {
-    const [resetKey, setResetKey] = useState<number>(0);
-
-    useEffect(() => {
-      if (carousels.length <= 1) return;
-      const timeout = setInterval(goNext, 3000);
-      return () => { clearInterval(timeout) };
-    }, [resetKey, carousels.length]);
-
-    const handleButtonClick = () => setResetKey((value) => value + 1);
-
     return (
       <div id="carousel-control" className="absolute inset-0">
-        {
-          carousels[currentIndex] &&
-          <Link href={`/carousel/${carousels[currentIndex].id}`} className="absolute inset-0" />
-        }
+        <Link href={`/carousel/${carousels[currentIndex].id}`} className="absolute inset-0 z-0" aria-label={trans("open_slide", { title: labels[currentIndex] })} />
         <button
           id="carousel-left-button"
           type="button"
-          aria-label="上一張輪播圖片"
-          className="absolute top-1/2 left-4 transform -translate-y-1/2 p-2 rounded-full text-white bg-black bg-opacity-40 hover:bg-opacity-70 transition-color duration-200 cursor-pointer"
-          onClick={() => { goPrevious(); handleButtonClick() }}
+          aria-label={trans("previous")}
+          className="absolute top-1/2 left-4 z-10 transform -translate-y-1/2 p-3 rounded-full text-white bg-black bg-opacity-70 cursor-pointer"
+          onClick={goPrevious}
         >
           <FontAwesomeIcon
             icon={faAngleLeft}
@@ -94,9 +124,9 @@ export default function Carousel({
         <button
           id="carousel-right-button"
           type="button"
-          aria-label="下一張輪播圖片"
-          className="absolute top-1/2 right-4 transform -translate-y-1/2 p-2 rounded-full text-white bg-black bg-opacity-40 hover:bg-opacity-70 transition-color duration-200 cursor-pointer"
-          onClick={() => { goNext(); handleButtonClick() }}
+          aria-label={trans("next")}
+          className="absolute top-1/2 right-4 z-10 transform -translate-y-1/2 p-3 rounded-full text-white bg-black bg-opacity-70 cursor-pointer"
+          onClick={goNext}
         >
           <FontAwesomeIcon
             icon={faAngleRight}
@@ -104,10 +134,10 @@ export default function Carousel({
             aria-hidden="true"
           />
         </button>
-        <div className="absolute flex flex-row bottom-4 left-1/2 transform -translate-x-1/2 gap-1.5 md:gap-2">
+        <div className="absolute flex flex-row bottom-4 left-1/2 z-10 transform -translate-x-1/2 gap-2">
           {
             Array.from({ length: carousels.length }).map((_, i) => (
-              <Circle key={i} index={i} isSelected={i === currentIndex} onClick={() => { setCurrentIndex(i); handleButtonClick() }} />
+              <Circle key={i} index={i} label={labels[i]} isSelected={i === currentIndex} onClick={() => { setCurrentIndex(i); resetTimer(); }} />
             ))
           }
         </div>
@@ -117,22 +147,23 @@ export default function Carousel({
 
   function Circle({
     index,
+    label,
     isSelected,
     onClick,
   }: {
     index: number,
+    label: string,
     isSelected: boolean,
     onClick?: MouseEventHandler<HTMLButtonElement>,
   }) {
     return (
       <button
         type="button"
-        aria-label={`切換至第 ${index + 1} 張輪播圖片`}
-        className={`group relative size-3 md:size-4 rounded-full ${isSelected ? "bg-opacity-70" : "bg-opacity-40"} bg-black cursor-pointer`}
+        aria-label={trans("go_to_slide", { number: index + 1, title: label })}
+        aria-current={isSelected ? "true" : undefined}
+        className={`relative size-4 rounded-full border-2 border-white ${isSelected ? "bg-gray-950" : "bg-gray-600"} cursor-pointer`}
         onClick={onClick}
-      >
-        <div className={`absolute inset-1/2 transform -translate-x-1/2 -translate-y-1/2 ${isSelected ? "size-1.5" : "size-0 group-hover:size-1"} transition-all duration-200 rounded-full bg-white bg-opacity-80`}></div>
-      </button>
+      />
     )
   }
 }

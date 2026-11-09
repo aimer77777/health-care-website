@@ -3,6 +3,7 @@ import PostPanel from "./post/post-panel";
 import RestaurantPanel from "./restaurant/restaurant-panel";
 import Carousel from "./carousel";
 import { normalPostColumnSelections } from "@/module/post/presenter/columnSelection";
+import { getTranslations } from "next-intl/server";
 
 type Props = {
   params: Promise<{ locale: string }>;
@@ -10,8 +11,10 @@ type Props = {
 
 export default async function HomePage(props: Props) {
   const params = await props.params;
+  const trans = await getTranslations("Home");
   return (
     <>
+      <h1 className="sr-only">{trans("site_title")}</h1>
       <div className="flex flex-row gap-10">
         <IndexMenu className="max-md:hidden" />
         <div className="flex flex-col flex-1 gap-10">
